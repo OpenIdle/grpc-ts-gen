@@ -5,7 +5,7 @@ import { extname, join, relative, resolve } from "path";
 import * as  protoLoader from "@grpc/proto-loader";
 import CodeGenerator from "./CodeGenerator";
 import { NamespaceAwareCodeGenerator } from "./NamespaceAwareCodeGenerator";
-import { ProtoDefinition } from "./GRPCDefintionTranslator";
+import { ProtoDefinition } from "./GRPCDefinitionTranslator";
 import { ICodeWriter } from "./ICodeWriter";
 import { VirtualDirectory, WriteVirtualDirectory } from "./VirtualDirectory";
 import { TSWriter } from "./TSCodeWriter";

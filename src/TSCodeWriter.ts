@@ -1,7 +1,7 @@
 import { PackageDefinition } from "@grpc/proto-loader";
 import { INamespace } from "protobufjs";
 import CodeGenerator from "./CodeGenerator";
-import { EnumDefinition, GrpcEnumType, GrpcMessageType, GrpcSymbol, GrpcType, MessageDefinition, NamespacedSymbol, ServiceDefinition } from "./GRPCDefintionTranslator";
+import { EnumDefinition, GrpcEnumType, GrpcMessageType, GrpcSymbol, GrpcType, MessageDefinition, NamespacedSymbol, ServiceDefinition } from "./GRPCDefinitionTranslator";
 import { ICodeWriter } from "./ICodeWriter";
 import { INamingTransformer } from "./INamingTransformer";
 import { NamespaceAwareCodeGenerator } from "./NamespaceAwareCodeGenerator";

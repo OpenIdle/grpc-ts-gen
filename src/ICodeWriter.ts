@@ -1,6 +1,6 @@
 import { PackageDefinition } from "@grpc/proto-loader";
 import { INamespace } from "protobufjs";
-import { EnumDefinition, MessageDefinition, ServiceDefinition } from "./GRPCDefintionTranslator";
+import { EnumDefinition, MessageDefinition, ServiceDefinition } from "./GRPCDefinitionTranslator";
 import { VirtualDirectory } from "./VirtualDirectory";
 
 export interface ICodeWriter {

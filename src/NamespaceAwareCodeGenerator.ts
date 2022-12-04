@@ -1,5 +1,5 @@
 import CodeGenerator from "./CodeGenerator";
-import { NamespacedSymbol } from "./GRPCDefintionTranslator";
+import { NamespacedSymbol } from "./GRPCDefinitionTranslator";
 
 
 export class NamespaceAwareCodeGenerator {
