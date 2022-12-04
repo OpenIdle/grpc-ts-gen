@@ -1,0 +1,31 @@
+{
+  "name": "grpc-ts-gen",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@grpc/grpc-js": "^1.7.3",
+    "@grpc/proto-loader": "^0.7.3",
+    "@types/node": "^18.11.9",
+    "@types/protobufjs": "^6.0.0",
+    "protobufjs": "~7.1.2"
+  },
+  "bin": {
+    "grpc-ts-gen": "./dist/grpc-ts-gen.js"
+  },
+  "files": [
+    "dist/CodeGenerator.js",
+    "dist/grpc-ts-gen.js",
+    "dist/GRPCDefinitionTranslator.js",
+    "dist/ICodeWriter.js",
+    "dist/INamingTransformer.js",
+    "dist/NamespaceAwareCodeGenerator.js",
+    "dist/TSCodeWriter.js",
+    "dist/VirtualDirectory.js"
+  ]
+}

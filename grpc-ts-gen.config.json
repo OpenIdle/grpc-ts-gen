@@ -1,0 +1,6 @@
+{
+	"protoBasePath": "../OpenIdle-Connect/protos",
+	"outPath": "testout",
+	"serverName": "OpenIdle",
+	"requestBodyAsObject": true
+}
