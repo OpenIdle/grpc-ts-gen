@@ -153,7 +153,7 @@ export class TSWriter implements ICodeWriter {
 
 		let className = `${this._serverName}Server`;
 
-		serverWriter.AddLine(`class ${className} {`);
+		serverWriter.AddLine(`export class ${className} {`);
 		serverWriter.Indent();
 		serverWriter.AddLine(`private _grpcServer: grpc.Server;`);
 		serverWriter.AddLine(`get GrpcServer(): grpc.Server { return this._grpcServer; }`);
