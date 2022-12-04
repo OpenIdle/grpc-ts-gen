@@ -2,18 +2,23 @@
   "name": "grpc-ts-gen",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "./dist/grpc-ts-gen.ts",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "author": "",
-  "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/OpenIdle/grpc-ts-gen.git"
+  },
+  "author": "Jens Emil Fink Højriis",
+  "license": "MIT",
   "dependencies": {
-    "@grpc/grpc-js": "^1.7.3",
     "@grpc/proto-loader": "^0.7.3",
-    "@types/node": "^18.11.9",
-    "@types/protobufjs": "^6.0.0",
     "protobufjs": "~7.1.2"
+  },
+  "peerDependencies": {
+    "@grpc/grpc-js": "^1.7.3",
+    "@grpc/proto-loader": "^0.7.3"
   },
   "bin": {
     "grpc-ts-gen": "./dist/grpc-ts-gen.js"
@@ -27,5 +32,10 @@
     "dist/NamespaceAwareCodeGenerator.js",
     "dist/TSCodeWriter.js",
     "dist/VirtualDirectory.js"
-  ]
+  ],
+  "devDependencies": {
+    "@grpc/grpc-js": "^1.7.3",
+    "@types/node": "^18.11.10",
+    "@types/protobufjs": "^6.0.0"
+  }
 }

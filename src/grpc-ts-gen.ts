@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 
-import { mkdir, readdir, readFile, stat, writeFile } from "fs/promises";
+import {readdir, readFile, stat } from "fs/promises";
 import { extname, join, relative, resolve } from "path";
 import * as  protoLoader from "@grpc/proto-loader";
 import CodeGenerator from "./CodeGenerator";
 import { NamespaceAwareCodeGenerator } from "./NamespaceAwareCodeGenerator";
-import { EnumDefinition, GrpcEnumType, GrpcMessageType, GrpcType, MessageDefinition, NamespacedSymbol, ProtoDefinition, ServiceDefinition } from "./GRPCDefintionTranslator";
+import { ProtoDefinition } from "./GRPCDefintionTranslator";
 import { ICodeWriter } from "./ICodeWriter";
 import { VirtualDirectory, WriteVirtualDirectory } from "./VirtualDirectory";
 import { TSWriter } from "./TSCodeWriter";
