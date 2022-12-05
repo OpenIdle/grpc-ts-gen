@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+package test.data.messagesamples;
+
+message SimpleMessage {
+	string username = 1;
+	uint32 someNumber = 2;
+	int32 signedNumber = 3;
+	string anotherString = 4;
+}
+
+enum Status {
+	LOGGED_IN = 0;
+	LOGGED_OUT = 1;
+	REQUIRES_PASSWORD = 2;
+	AUTHENTICATING = 3;
+}
+
+message AdvancedMessage {
+	string username = 1;
+	uint32 someNumber = 2;
+	int32 signedNumber = 3;
+	string anotherString = 4;
+	Status status = 5;
+	SimpleMessage nestedMessage = 6;
+}

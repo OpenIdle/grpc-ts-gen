@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+package test.data.enumsamples;
+
+enum HoleyStatus {
+	LOGGED_IN = 0;
+	LOGGED_OUT = 10;
+	REQUIRES_PASSWORD = 20;
+	AUTHENTICATING = 35;
+}

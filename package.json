@@ -2,9 +2,9 @@
   "name": "grpc-ts-gen",
   "version": "1.0.2",
   "description": "",
-  "main": "./dist/grpc-ts-gen.ts",
+  "main": "./dist/src/grpc-ts-gen.ts",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "npx mocha --parallel dist/test/**/*.js"
   },
   "repository": {
     "type": "git",
@@ -24,18 +24,22 @@
     "grpc-ts-gen": "./dist/grpc-ts-gen.js"
   },
   "files": [
-    "dist/CodeGenerator.js",
-    "dist/grpc-ts-gen.js",
-    "dist/GRPCDefinitionTranslator.js",
-    "dist/ICodeWriter.js",
-    "dist/INamingTransformer.js",
-    "dist/NamespaceAwareCodeGenerator.js",
-    "dist/TSCodeWriter.js",
-    "dist/VirtualDirectory.js"
+    "dist/src/CodeGenerator.js",
+    "dist/src/grpc-ts-gen.js",
+    "dist/src/GRPCDefinitionTranslator.js",
+    "dist/src/ICodeWriter.js",
+    "dist/src/INamingTransformer.js",
+    "dist/src/NamespaceAwareCodeGenerator.js",
+    "dist/src/TSCodeWriter.js",
+    "dist/src/VirtualDirectory.js"
   ],
   "devDependencies": {
     "@grpc/grpc-js": "^1.7.3",
+    "@types/chai": "^4.3.4",
+    "@types/mocha": "^10.0.1",
     "@types/node": "^18.11.10",
-    "@types/protobufjs": "^6.0.0"
+    "@types/protobufjs": "^6.0.0",
+    "chai": "^4.3.7",
+    "mocha": "^10.1.0"
   }
 }

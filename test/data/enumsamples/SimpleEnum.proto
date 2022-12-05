@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+package test.data.enumsamples;
+
+enum Status {
+	LOGGED_IN = 0;
+	LOGGED_OUT = 1;
+	REQUIRES_PASSWORD = 2;
+	AUTHENTICATING = 3;
+}

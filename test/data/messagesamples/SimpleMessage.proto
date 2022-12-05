@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+package test.data.messagesamples;
+
+message SimpleMessage {
+	string username = 1;
+	uint32 someNumber = 2;
+	int32 signedNumber = 3;
+	string anotherString = 4;
+}
