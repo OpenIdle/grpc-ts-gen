@@ -1,6 +1,6 @@
 import * as  protoLoader from "@grpc/proto-loader";
 import { assert, expect } from "chai";
-import { GrpcEnumType, GrpcMessageType, GrpcSymbol, GrpcType, MessageDefinition, MessageField, NamespacedSymbol, ProtoDefinition, SymbolType } from "../../src/GRPCDefinitionTranslator";
+import { GrpcEnumType, GrpcMessageType, GrpcOneofType, GrpcSymbol, GrpcType, MessageDefinition, MessageField, NamespacedSymbol, ProtoDefinition, SymbolType } from "../../src/GRPCDefinitionTranslator";
 
 const ExepctedSimpleMessage = new MessageDefinition(
 	NamespacedSymbol.FromString("test.data.messagesamples.SimpleMessage", SymbolType.Message),
@@ -25,6 +25,20 @@ const ExpectedAdvancedMessage = new MessageDefinition(
 		new MessageField(new GrpcSymbol("nestedMessage", SymbolType.Field), new GrpcMessageType(
 			NamespacedSymbol.FromString("test.data.messagesamples.SimpleMessage", SymbolType.Enum))
 		),
+	]
+)
+
+const ExpectedOneofMessage = new MessageDefinition(
+	NamespacedSymbol.FromString("test.data.messagesamples.OneofField", SymbolType.Message),
+	[
+		new MessageField(new GrpcSymbol("someOtherField", SymbolType.Field), new GrpcType("TYPE_STRING")),
+		new MessageField(new GrpcSymbol("oneOfField", SymbolType.Field), new GrpcOneofType({
+				someMessage: new GrpcMessageType(NamespacedSymbol.FromString("test.data.messagesamples.SomeMessage", SymbolType.Message)),
+				str: new GrpcType("TYPE_STRING"),
+				j: new GrpcType("TYPE_INT32"),
+			}
+		)),
+		new MessageField(new GrpcSymbol("someOtherField2", SymbolType.Field), new GrpcType("TYPE_STRING"))
 	]
 )
 
@@ -54,4 +68,14 @@ describe("GRPCDefintionTranslator message test", () => {
 		assert.exists(targetMessage, "Exepcted to find AdvancedMessage");
 		assert.deepEqual(targetMessage, ExpectedAdvancedMessage);
 	});
-})
+
+	it("Should convert oneof fields correctly", async () => {
+		let data = ProtoDefinition.FromPackageDefinition(await protoLoader.load("test/data/messagesamples/OneofField.proto"));
+		
+		assert.equal(data.enums.length, 0, "There should be no enums");
+		assert.equal(data.messages.length, 2, "There should be two messages");
+		assert.equal(data.services.length, 0, "There should be no services");
+		
+		assert.deepEqual(data.messages[1], ExpectedOneofMessage, "The message containing a oneof should be correct");
+	});
+});

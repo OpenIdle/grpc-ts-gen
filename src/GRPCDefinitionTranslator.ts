@@ -83,7 +83,7 @@ export class NamespacedSymbol {
 	name: GrpcSymbol;
 }
 
-type GrpcBuiltInTypeStrings = "TYPE_MESSAGE" | "TYPE_ENUM" | "TYPE_STRING" | "TYPE_INT64" | "TYPE_INT32" | "TYPE_UINT32";
+type GrpcBuiltInTypeStrings = "TYPE_MESSAGE" | "TYPE_ENUM" | "TYPE_ONEOF" | "TYPE_STRING" | "TYPE_INT64" | "TYPE_INT32" | "TYPE_UINT32";
 
 export class GrpcType {
 	type: GrpcBuiltInTypeStrings
@@ -105,6 +105,14 @@ export class GrpcEnumType extends GrpcType {
 	constructor(symbol: NamespacedSymbol) {
 		super("TYPE_ENUM");
 		this.symbol = symbol;
+	}
+}
+
+export class GrpcOneofType extends GrpcType {
+	definition: Record<string, GrpcType>;
+	constructor(definition: Record<string, GrpcType>) {
+		super("TYPE_ONEOF");
+		this.definition = definition;
 	}
 }
 
