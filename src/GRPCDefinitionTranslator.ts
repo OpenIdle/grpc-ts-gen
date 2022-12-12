@@ -1,10 +1,67 @@
-import { PackageDefinition } from "@grpc/proto-loader";
+import * as protoLoader from "@grpc/proto-loader";
+
+export enum SymbolType {
+	Namespace,
+	Enum,
+	EnumValue,
+	Service,
+	Procedure,
+	Field,
+	Message
+}
 
 export class GrpcSymbol {
-	constructor(name: string) {
+
+	constructor(name: string, type: SymbolType) {
 		this.name = name;
+		this.type = type;
+	}
+
+	Decompose(): string[] {
+		if (this.name.length == 0) {
+			return [""];
+		}
+
+		let allCharactersUppercase = true;
+		for (let c of this.name) {
+			if (c.toUpperCase() != c) {
+				allCharactersUppercase = false;
+				break;
+			}
+		}
+
+		if (allCharactersUppercase) {
+			//Screaming snake case
+			return this.name.split("_").map(part => part.toLowerCase());
+		} else {
+			//either snake case, pascal case, camel case or a mix
+			return this.name
+				.split("_")
+				.map((part) => {
+					let splitted = [];
+					let acc = "";
+					for (let i = 0; i < part.length; i++) {
+						let c = part.charAt(i);
+						if (c.toUpperCase() == c) {
+							if (acc.length != 0) {
+								splitted.push(acc);
+							}
+							acc = c;
+						} else {
+							acc += c;
+						}
+					}
+					if (acc.length != 0) {
+						splitted.push(acc);
+					}
+					return splitted;
+				})
+				.flat()
+				.map(x => x.toLowerCase());
+		}
 	}
 	name: string;
+	type: SymbolType;
 }
 
 export class NamespacedSymbol {
@@ -13,12 +70,12 @@ export class NamespacedSymbol {
 		this.name = name;
 	}
 
-	static FromString(fullName: string): NamespacedSymbol {
+	static FromString(fullName: string, symbolType: SymbolType): NamespacedSymbol {
 		let split = fullName.split(".");
 		let [name] = split.splice(split.length - 1, 1);
 		return new NamespacedSymbol(
-			split.map(x => new GrpcSymbol(x)),
-			new GrpcSymbol(name)
+			split.map(x => new GrpcSymbol(x, SymbolType.Namespace)),
+			new GrpcSymbol(name, symbolType)
 		);
 	}
 
@@ -115,54 +172,62 @@ export class ProtoDefinition {
 		this.enums = enums;
 	}
 
-	static FromPackageDefinition(packageDefinition: PackageDefinition): ProtoDefinition {
+	static FromPackageDefinition(packageDefinition: protoLoader.PackageDefinition): ProtoDefinition {
 		let rv = new ProtoDefinition([], [], []);
+		let rawServices: [string, protoLoader.ServiceDefinition][] = [];
 		for (let [key, proto] of Object.entries(packageDefinition)) {
 			if ("format" in proto && proto.format == 'Protocol Buffer 3 DescriptorProto') {
-				let symbol = NamespacedSymbol.FromString(key);
+				let symbol = NamespacedSymbol.FromString(key, SymbolType.Message);
 				let fields: MessageField[] = [];
 				for (let field of ((proto.type as any).field as any[])) {
 					let type: GrpcType;
 					if (field.type == "TYPE_ENUM") {
-						type = new GrpcEnumType(NamespacedSymbol.FromString(field.typeName))
+						type = new GrpcEnumType(NamespacedSymbol.FromString(field.typeName, SymbolType.Enum))
 					} else if (field.type == "TYPE_MESSAGE") {
-						type = new GrpcMessageType(NamespacedSymbol.FromString(field.typeName))
+						type = new GrpcMessageType(NamespacedSymbol.FromString(field.typeName, SymbolType.Enum))
 					} else {
 						type = new GrpcType(field.type);
 					}
 					fields.push(new MessageField(
-						new GrpcSymbol(field.name),
+						new GrpcSymbol(field.name, SymbolType.Field),
 						type
 					));
 				}
 				rv.messages.push(new MessageDefinition(symbol, fields));
 			} else if ("format" in proto && proto.format == 'Protocol Buffer 3 EnumDescriptorProto') {
-				let symbol = NamespacedSymbol.FromString(key);
+				let symbol = NamespacedSymbol.FromString(key, SymbolType.Enum);
 				let values: EnumValue[] = [];
 				for (let value of (proto.type as any).value) {
-					values.push(new EnumValue(new GrpcSymbol(value.name), value.number));
+					values.push(new EnumValue(new GrpcSymbol(value.name, SymbolType.EnumValue), value.number));
 				}
 				rv.enums.push(new EnumDefinition(symbol, values));
 			} else {
-				let symbol = NamespacedSymbol.FromString(key);
-				let methods: ServiceMethod[] = [];
-	
-				for (let [key, procedure] of Object.entries(proto)) {
-					let method_symbol = new GrpcSymbol(key);
-					let requestName = (procedure.requestType.type as any).name;
-					let responseName = (procedure.responseType.type as any).name;
-					
-					let inputType = new GrpcMessageType(new NamespacedSymbol(symbol.namespace, new GrpcSymbol(requestName)));
-					let outputType = new GrpcMessageType(new NamespacedSymbol(symbol.namespace, new GrpcSymbol(responseName)));
-					
-					methods.push(new ServiceMethod(method_symbol, inputType, outputType));
-				}
-	
-				rv.services.push(new ServiceDefinition(symbol, methods));
+				rawServices.push([key, proto]);
 			}
+		}
+		for (let [key, proto] of rawServices) {
+			let symbol = NamespacedSymbol.FromString(key, SymbolType.Service);
+			let methods: ServiceMethod[] = [];
+
+			for (let [key, procedure] of Object.entries(proto)) {
+				let method_symbol = new GrpcSymbol(key, SymbolType.Procedure);
+				let requestName = (procedure.requestType.type as any).name;
+				let responseName = (procedure.responseType.type as any).name;
+				
+				//Resolve the type
+
+				let inputType = new GrpcMessageType(new NamespacedSymbol(symbol.namespace, new GrpcSymbol(requestName, SymbolType.Message)));
+				let outputType = new GrpcMessageType(new NamespacedSymbol(symbol.namespace, new GrpcSymbol(responseName, SymbolType.Message)));
+				
+				methods.push(new ServiceMethod(method_symbol, inputType, outputType));
+			}
+
+			rv.services.push(new ServiceDefinition(symbol, methods));
 		}
 		return rv;
 	}
+
+
 	messages: MessageDefinition[];
 	services: ServiceDefinition[];
 	enums: EnumDefinition[];

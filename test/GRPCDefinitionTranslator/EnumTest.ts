@@ -1,24 +1,24 @@
-import { EnumDefinition, EnumValue, GrpcSymbol, NamespacedSymbol, ProtoDefinition } from "../../src/GRPCDefinitionTranslator";
+import { EnumDefinition, EnumValue, GrpcSymbol, NamespacedSymbol, ProtoDefinition, SymbolType } from "../../src/GRPCDefinitionTranslator";
 import * as  protoLoader from "@grpc/proto-loader";
 import { assert } from "chai";
 
 const ExpectedHoleyStatusData = new EnumDefinition(
-	NamespacedSymbol.FromString("test.data.enumsamples.HoleyStatus"),
+	NamespacedSymbol.FromString("test.data.enumsamples.HoleyStatus", SymbolType.Enum),
 	[
-		new EnumValue(new GrpcSymbol("LOGGED_IN"), 0),
-		new EnumValue(new GrpcSymbol("LOGGED_OUT"), 10),
-		new EnumValue(new GrpcSymbol("REQUIRES_PASSWORD"), 20),
-		new EnumValue(new GrpcSymbol("AUTHENTICATING"), 35),
+		new EnumValue(new GrpcSymbol("LOGGED_IN", SymbolType.EnumValue), 0),
+		new EnumValue(new GrpcSymbol("LOGGED_OUT", SymbolType.EnumValue), 10),
+		new EnumValue(new GrpcSymbol("REQUIRES_PASSWORD", SymbolType.EnumValue), 20),
+		new EnumValue(new GrpcSymbol("AUTHENTICATING", SymbolType.EnumValue), 35),
 	]
 );
 
 const ExpectedStatusData = new EnumDefinition(
-	NamespacedSymbol.FromString("test.data.enumsamples.Status"),
+	NamespacedSymbol.FromString("test.data.enumsamples.Status", SymbolType.Enum),
 	[
-		new EnumValue(new GrpcSymbol("LOGGED_IN"), 0),
-		new EnumValue(new GrpcSymbol("LOGGED_OUT"), 1),
-		new EnumValue(new GrpcSymbol("REQUIRES_PASSWORD"), 2),
-		new EnumValue(new GrpcSymbol("AUTHENTICATING"), 3),
+		new EnumValue(new GrpcSymbol("LOGGED_IN", SymbolType.EnumValue), 0),
+		new EnumValue(new GrpcSymbol("LOGGED_OUT", SymbolType.EnumValue), 1),
+		new EnumValue(new GrpcSymbol("REQUIRES_PASSWORD", SymbolType.EnumValue), 2),
+		new EnumValue(new GrpcSymbol("AUTHENTICATING", SymbolType.EnumValue), 3),
 	]
 );
 

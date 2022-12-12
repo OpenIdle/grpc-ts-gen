@@ -1,16 +1,19 @@
 import CodeGenerator from "./CodeGenerator";
-import { NamespacedSymbol } from "./GRPCDefinitionTranslator";
+import { GrpcSymbol, NamespacedSymbol } from "./GRPCDefinitionTranslator";
+import { INamingTransformer } from "./INamingTransformer";
 
 
-export class NamespaceAwareCodeGenerator {
+export class TSCodeGenerator {
 	_namespaceRelativeLines: Map<string, {data: ({line: string} | {indent: true} | {unindent: true})[]}>;
 	_currentNamespaceStack: Array<string>;
 	_codeGenerator: CodeGenerator;
-	constructor(codeGenerator: CodeGenerator) {
+	_namingTransformer: INamingTransformer;
+	constructor(codeGenerator: CodeGenerator, namingTransformer: INamingTransformer) {
 		this._currentNamespaceStack = [];
 		this._namespaceRelativeLines = new Map();
 		this._namespaceRelativeLines.set("", {data: []});
 		this._codeGenerator = codeGenerator;
+		this._namingTransformer = namingTransformer;
 	}
 
 	private AddLineData(data: {line: string} | {indent: true} | {unindent: true}) {
@@ -32,28 +35,24 @@ export class NamespaceAwareCodeGenerator {
 		this.AddLineData({unindent: true});
 	}
 
-	DefineInterface(symbol: NamespacedSymbol, cb: () => void) {
-		this.Namespace(symbol.namespace.map(x => x.name), () => {
-			this.AddLine(`export interface ${symbol.name.name} {`);
-			this.Indent();
-			cb();
-			this.Unindent();
-			this.AddLine(`}`);
-		});
+	DefineInterface(name: GrpcSymbol, cb: () => void) {
+		this.AddLine(`export interface ${this._namingTransformer.ConvertSymbol(name)} {`);
+		this.Indent();
+		cb();
+		this.Unindent();
+		this.AddLine(`}`);
 	}
 
-	DefineEnum(symbol: NamespacedSymbol, cb: () => void) {
-		this.Namespace(symbol.namespace.map(x => x.name), () => {
-			this.AddLine(`export enum ${symbol.name.name} {`);
-			this.Indent();
-			cb();
-			this.Unindent();
-			this.AddLine(`}`);
-		});
+	DefineEnum(name: GrpcSymbol, cb: () => void) {
+		this.AddLine(`export enum ${this._namingTransformer.ConvertSymbol(name)} {`);
+		this.Indent();
+		cb();
+		this.Unindent();
+		this.AddLine(`}`);
 	}
 
-	Namespace(namespaces: string[], cb: () => void) {
-		this._currentNamespaceStack = namespaces;
+	Namespace(namespaces: GrpcSymbol[], cb: () => void) {
+		this._currentNamespaceStack = namespaces.map((x) => this._namingTransformer.ConvertSymbol(x));
 		let namespaceIdentifier = this._currentNamespaceStack.join(".");
 		if (!this._namespaceRelativeLines.has(namespaceIdentifier)) {
 			this._namespaceRelativeLines.set(namespaceIdentifier, {data: []});

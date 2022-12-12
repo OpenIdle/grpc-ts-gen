@@ -102,5 +102,5 @@
     "./src/*.ts",
     "./test/*.ts",
     "./test/**/*.ts"
-, ]
+, "test/GRPCDefinitionTranslator", "test/data/messagesamples/simpleMessage.proto", ]
 }

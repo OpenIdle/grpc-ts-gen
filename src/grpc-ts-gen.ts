@@ -4,13 +4,13 @@ import {readdir, readFile, stat } from "fs/promises";
 import { extname, join, relative, resolve } from "path";
 import * as  protoLoader from "@grpc/proto-loader";
 import CodeGenerator from "./CodeGenerator";
-import { NamespaceAwareCodeGenerator } from "./NamespaceAwareCodeGenerator";
 import { ProtoDefinition } from "./GRPCDefinitionTranslator";
 import { ICodeWriter } from "./ICodeWriter";
 import { VirtualDirectory, WriteVirtualDirectory } from "./VirtualDirectory";
 import { TSWriter } from "./TSCodeWriter";
 import { INamingTransformer } from "./INamingTransformer";
 import protobuf from "protobufjs";
+import { DefaultTransformer } from "./DefaultTransformer";
 
 async function GatherAllProtoFiles(searchDirectory: string): Promise<string[]> {
 	let directory = await readdir(searchDirectory);
@@ -154,8 +154,7 @@ async function main(args: string[]): Promise<number> {
 
 	let creator = new TypeDefinitionCreator(
 		new TSWriter(
-			new NamespaceAwareCodeGenerator(new CodeGenerator()), 
-			null as any as INamingTransformer, 
+			new DefaultTransformer(), 
 			options.requestBodyAsParameters,
 			options.serverName
 		)
