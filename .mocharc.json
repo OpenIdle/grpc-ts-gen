@@ -1,0 +1,4 @@
+{
+    "parallel": true,
+    "spec": ["dist/test/**/*.test.js"]
+}

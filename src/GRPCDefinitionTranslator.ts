@@ -1,4 +1,5 @@
 import * as protoLoader from "@grpc/proto-loader";
+import { INamespace } from "protobufjs";
 
 export enum SymbolType {
 	Namespace,
@@ -186,6 +187,7 @@ export class ProtoDefinition {
 		for (let [key, proto] of Object.entries(packageDefinition)) {
 			if ("format" in proto && proto.format == 'Protocol Buffer 3 DescriptorProto') {
 				let symbol = NamespacedSymbol.FromString(key, SymbolType.Message);
+				console.log(key, JSON.stringify(proto.type, null, 4));
 				let fields: MessageField[] = [];
 				for (let field of ((proto.type as any).field as any[])) {
 					let type: GrpcType;
@@ -221,8 +223,6 @@ export class ProtoDefinition {
 				let method_symbol = new GrpcSymbol(key, SymbolType.Procedure);
 				let requestName = (procedure.requestType.type as any).name;
 				let responseName = (procedure.responseType.type as any).name;
-				
-				//Resolve the type
 
 				let inputType = new GrpcMessageType(new NamespacedSymbol(symbol.namespace, new GrpcSymbol(requestName, SymbolType.Message)));
 				let outputType = new GrpcMessageType(new NamespacedSymbol(symbol.namespace, new GrpcSymbol(responseName, SymbolType.Message)));
@@ -234,7 +234,43 @@ export class ProtoDefinition {
 		}
 		return rv;
 	}
+	
+	static FromPbjs(root: INamespace): ProtoDefinition {
+		let rv = new ProtoDefinition([], [], []);
+		this.FromPbjsRecursive([], root, rv);
+		return rv;
+	}
 
+	private static FromPbjsRecursive(namespaces: GrpcSymbol[], root: INamespace, protoDefinition: ProtoDefinition): void {
+		if (root.nested != null) {
+			for (let [key, val] of Object.entries(root.nested)) {
+				if ("values" in val && val.values != null) { //IEnum
+					let enumDefinition = new EnumDefinition(
+						new NamespacedSymbol(namespaces, new GrpcSymbol(key, SymbolType.Enum)),
+						[]
+					);
+					for (let [eKey, eVal] of Object.entries(protoDefinition.enums.values)) {
+						enumDefinition.values.push(
+							new EnumValue(new GrpcSymbol(eKey, SymbolType.EnumValue), eVal)
+						);
+					}
+					protoDefinition.enums.push(enumDefinition);
+				} else if ("fields" in val && val.fields != null) { // IType
+					let messageDefinition = new MessageDefinition(
+						new NamespacedSymbol(namespaces, new GrpcSymbol(key, SymbolType.Message)),
+						[]
+					);
+					for (let [mKey, mVal] of Object.entries(val.fields)) {
+						console.log(mVal);
+					}
+				} else if ("methods" in val && val.methods != null) { //IService
+					
+				} else if ("nested" in val && val.nested != null) { //INamespace
+					this.FromPbjs(namespaces.concat([new GrpcSymbol(key, SymbolType.Namespace)]), val.nested, protoDefinition);
+				} 
+			}
+		}
+	}
 
 	messages: MessageDefinition[];
 	services: ServiceDefinition[];

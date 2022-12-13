@@ -1,6 +1,7 @@
-import * as  protoLoader from "@grpc/proto-loader";
+import * as protobuf from "protobufjs";
 import { assert, expect } from "chai";
 import { GrpcEnumType, GrpcMessageType, GrpcOneofType, GrpcSymbol, GrpcType, MessageDefinition, MessageField, NamespacedSymbol, ProtoDefinition, SymbolType } from "../../src/GRPCDefinitionTranslator";
+
 
 const ExepctedSimpleMessage = new MessageDefinition(
 	NamespacedSymbol.FromString("test.data.messagesamples.SimpleMessage", SymbolType.Message),
@@ -44,7 +45,8 @@ const ExpectedOneofMessage = new MessageDefinition(
 
 describe("GRPCDefintionTranslator message test", () => {
 	it("Should convert message with only built in types correctly", async () => {
-		let data = ProtoDefinition.FromPackageDefinition(await protoLoader.load("test/data/messagesamples/SimpleMessage.proto"));
+		let description = await protobuf.load("test/data/messagesamples/SimpleMessage.proto");
+		let data = ProtoDefinition.FromPbjs(description.toJSON());
 		
 		assert.equal(data.enums.length, 0, "There should be no enums");
 		assert.equal(data.messages.length, 1, "There should be only one message");
@@ -53,8 +55,8 @@ describe("GRPCDefintionTranslator message test", () => {
 	});
 
 	it("Should convert message with nested message fields and enums correctly", async () => {
-		let data = ProtoDefinition.FromPackageDefinition(await protoLoader.load("test/data/messagesamples/MessageWithCustomTypes.proto"));
-		
+		let description = await protobuf.load("test/data/messagesamples/MessageWithCustomTypes.proto");
+		let data = ProtoDefinition.FromPbjs(description.toJSON());
 		assert.equal(data.enums.length, 1, "There should be one enum");
 		assert.equal(data.messages.length, 2, "There should be two messages");
 		assert.equal(data.services.length, 0, "There should be no services");
