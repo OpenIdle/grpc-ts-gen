@@ -47,21 +47,21 @@ class TypeDefinitionCreator {
 		
 		let protobufJsJSON = await protobuf.load(files, root);
 		
-		let definition = ProtoDefinition.FromPackageDefinition(protos);
+		let definition = ProtoDefinition.FromPbjs(protobufJsJSON);
 
-		for (let message of definition.messages) {
+		for (let message of definition.GetMessages()) {
 			this._codeWriter.WriteMessageInterface(message);
 		}
 
-		for (let _enum of definition.enums) {
+		for (let _enum of definition.GetEnums()) {
 			this._codeWriter.WriteEnum(_enum);
 		}
 
-		for (let service of definition.services) {
+		for (let service of definition.GetServices()) {
 			this._codeWriter.WriteServiceInterface(service);
 		}
 		
-		this._codeWriter.WriteServer(definition.services, protos, protobufJsJSON.toJSON());
+		this._codeWriter.WriteServer(Array.from(definition.GetServices()), protos, protobufJsJSON.toJSON());
 
 		return this._codeWriter.GetResult();
 	}

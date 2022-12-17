@@ -1,6 +1,7 @@
 import { EnumDefinition, EnumValue, GrpcSymbol, NamespacedSymbol, ProtoDefinition, SymbolType } from "../../src/GRPCDefinitionTranslator";
 import * as  protoLoader from "@grpc/proto-loader";
 import { assert } from "chai";
+import { loadFromPbjsDefinition } from "../helper";
 
 const ExpectedHoleyStatusData = new EnumDefinition(
 	NamespacedSymbol.FromString("test.data.enumsamples.HoleyStatus", SymbolType.Enum),
@@ -24,35 +25,32 @@ const ExpectedStatusData = new EnumDefinition(
 
 describe("GRPCDefintionTranslator enums test", () => {
 	it("Should convert enums correctly", async () => {
-		let data = ProtoDefinition.FromPackageDefinition(await protoLoader.load("test/data/enumsamples/SimpleEnum.proto"));
-		
-		assert.equal(data.enums.length, 1);
-		assert.equal(data.messages.length, 0);
-		assert.equal(data.services.length, 0);
-		assert.deepEqual(data.enums[0], ExpectedStatusData);
+		let data = await loadFromPbjsDefinition("enumsamples/SimpleEnum.proto");
+		let enums = Array.from(data.GetEnums());
+		assert.equal(enums.length, 1);
+		assert.deepEqual(enums[0], ExpectedStatusData);
 	})
 
 	it("Should convert holey enums correctly", async () => {
-		let data = ProtoDefinition.FromPackageDefinition(await protoLoader.load("test/data/enumsamples/HoleyEnum.proto"));
+		let data = await loadFromPbjsDefinition("enumsamples/HoleyEnum.proto");
 		
-		assert.equal(data.enums.length, 1);
-		assert.equal(data.messages.length, 0);
-		assert.equal(data.services.length, 0);
-		assert.deepEqual(data.enums[0], ExpectedHoleyStatusData);
+		let enums = Array.from(data.GetEnums());
+		assert.equal(enums.length, 1);
+		assert.deepEqual(enums[0], ExpectedHoleyStatusData);
 	})
 
 	it("Should convert multiple enums correctly", async () => {
-		let data = ProtoDefinition.FromPackageDefinition(await protoLoader.load([
-			"test/data/enumsamples/HoleyEnum.proto", 
-			"test/data/enumsamples/SimpleEnum.proto"
-		]));
+		let data = await loadFromPbjsDefinition([
+			"enumsamples/HoleyEnum.proto", 
+			"enumsamples/SimpleEnum.proto"
+		]);
 		
-		assert.equal(data.enums.length, 2);
-		assert.equal(data.messages.length, 0);
-		assert.equal(data.services.length, 0);
+		let enums = Array.from(data.GetEnums());
+		assert.equal(enums.length, 2);
+
 		let enumNames: Set<string> = new Set();
 		
-		for (let _enum of data.enums) {
+		for (let _enum of enums) {
 			assert.oneOf(_enum.symbol.name.name, [
 				ExpectedHoleyStatusData.symbol.name.name,
 				ExpectedStatusData.symbol.name.name

@@ -40,13 +40,13 @@ export class TSWriter implements ICodeWriter {
 			return this.GetFullSymbolName(type.symbol)
 		}
 		switch (type.type) {
-			case "TYPE_STRING":
+			case "string":
 				return STRING_TYPE_NAME;
-			case "TYPE_INT64":
+			case "int64":
 				return NUMBER_TYPE_NAME;
-			case "TYPE_INT32":
+			case "int32":
 				return NUMBER_TYPE_NAME;
-			case "TYPE_UINT32":
+			case "uint32":
 				return NUMBER_TYPE_NAME;
 			default:
 				throw new Error("Unknown type: " + type.type);

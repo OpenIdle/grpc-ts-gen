@@ -1,30 +1,30 @@
 import * as protobuf from "protobufjs";
 import { assert, expect } from "chai";
 import { GrpcEnumType, GrpcMessageType, GrpcOneofType, GrpcSymbol, GrpcType, MessageDefinition, MessageField, NamespacedSymbol, ProtoDefinition, SymbolType } from "../../src/GRPCDefinitionTranslator";
-
+import { loadFromPbjsDefinition } from "../helper";
 
 const ExepctedSimpleMessage = new MessageDefinition(
 	NamespacedSymbol.FromString("test.data.messagesamples.SimpleMessage", SymbolType.Message),
 	[
-		new MessageField(new GrpcSymbol("username", SymbolType.Field), new GrpcType("TYPE_STRING")),
-		new MessageField(new GrpcSymbol("someNumber", SymbolType.Field), new GrpcType("TYPE_UINT32")),
-		new MessageField(new GrpcSymbol("signedNumber", SymbolType.Field), new GrpcType("TYPE_INT32")),
-		new MessageField(new GrpcSymbol("anotherString", SymbolType.Field), new GrpcType("TYPE_STRING")),
+		new MessageField(new GrpcSymbol("username", SymbolType.Field), new GrpcType("string")),
+		new MessageField(new GrpcSymbol("someNumber", SymbolType.Field), new GrpcType("uint32")),
+		new MessageField(new GrpcSymbol("signedNumber", SymbolType.Field), new GrpcType("int32")),
+		new MessageField(new GrpcSymbol("anotherString", SymbolType.Field), new GrpcType("string")),
 	]
 );
 
 const ExpectedAdvancedMessage = new MessageDefinition(
 	NamespacedSymbol.FromString("test.data.messagesamples.AdvancedMessage", SymbolType.Message),
 	[
-		new MessageField(new GrpcSymbol("username", SymbolType.Field), new GrpcType("TYPE_STRING")),
-		new MessageField(new GrpcSymbol("someNumber", SymbolType.Field), new GrpcType("TYPE_UINT32")),
-		new MessageField(new GrpcSymbol("signedNumber", SymbolType.Field), new GrpcType("TYPE_INT32")),
-		new MessageField(new GrpcSymbol("anotherString", SymbolType.Field), new GrpcType("TYPE_STRING")),
+		new MessageField(new GrpcSymbol("username", SymbolType.Field), new GrpcType("string")),
+		new MessageField(new GrpcSymbol("someNumber", SymbolType.Field), new GrpcType("uint32")),
+		new MessageField(new GrpcSymbol("signedNumber", SymbolType.Field), new GrpcType("int32")),
+		new MessageField(new GrpcSymbol("anotherString", SymbolType.Field), new GrpcType("string")),
 		new MessageField(new GrpcSymbol("status", SymbolType.Field), new GrpcEnumType(
 			NamespacedSymbol.FromString("test.data.messagesamples.Status", SymbolType.Enum))
 		),
 		new MessageField(new GrpcSymbol("nestedMessage", SymbolType.Field), new GrpcMessageType(
-			NamespacedSymbol.FromString("test.data.messagesamples.SimpleMessage", SymbolType.Enum))
+			NamespacedSymbol.FromString("test.data.messagesamples.SimpleMessage", SymbolType.Message))
 		),
 	]
 )
@@ -32,36 +32,34 @@ const ExpectedAdvancedMessage = new MessageDefinition(
 const ExpectedOneofMessage = new MessageDefinition(
 	NamespacedSymbol.FromString("test.data.messagesamples.OneofField", SymbolType.Message),
 	[
-		new MessageField(new GrpcSymbol("someOtherField", SymbolType.Field), new GrpcType("TYPE_STRING")),
+		new MessageField(new GrpcSymbol("someOtherField", SymbolType.Field), new GrpcType("string")),
 		new MessageField(new GrpcSymbol("oneOfField", SymbolType.Field), new GrpcOneofType({
 				someMessage: new GrpcMessageType(NamespacedSymbol.FromString("test.data.messagesamples.SomeMessage", SymbolType.Message)),
-				str: new GrpcType("TYPE_STRING"),
-				j: new GrpcType("TYPE_INT32"),
+				str: new GrpcType("string"),
+				j: new GrpcType("int32"),
 			}
 		)),
-		new MessageField(new GrpcSymbol("someOtherField2", SymbolType.Field), new GrpcType("TYPE_STRING"))
+		new MessageField(new GrpcSymbol("someOtherField2", SymbolType.Field), new GrpcType("string"))
 	]
 )
 
 describe("GRPCDefintionTranslator message test", () => {
 	it("Should convert message with only built in types correctly", async () => {
-		let description = await protobuf.load("test/data/messagesamples/SimpleMessage.proto");
-		let data = ProtoDefinition.FromPbjs(description.toJSON());
+		let data = await loadFromPbjsDefinition("messagesamples/SimpleMessage.proto");
 		
-		assert.equal(data.enums.length, 0, "There should be no enums");
-		assert.equal(data.messages.length, 1, "There should be only one message");
-		assert.equal(data.services.length, 0, "There should be no services");
-		assert.deepEqual(data.messages[0], ExepctedSimpleMessage);
+		let messages = Array.from(data.GetMessages());
+		assert.equal(messages.length, 1);
+		assert.deepEqual(messages[0], ExepctedSimpleMessage);
 	});
 
 	it("Should convert message with nested message fields and enums correctly", async () => {
-		let description = await protobuf.load("test/data/messagesamples/MessageWithCustomTypes.proto");
-		let data = ProtoDefinition.FromPbjs(description.toJSON());
-		assert.equal(data.enums.length, 1, "There should be one enum");
-		assert.equal(data.messages.length, 2, "There should be two messages");
-		assert.equal(data.services.length, 0, "There should be no services");
+		let data = await loadFromPbjsDefinition("messagesamples/MessageWithCustomTypes.proto");
+
+		let messages = Array.from(data.GetMessages());
+		assert.equal(messages.length, 2);
+
 		let targetMessage;
-		for (let message of data.messages) {
+		for (let message of messages) {
 			if (message.symbol.name.name == "AdvancedMessage") {
 				targetMessage = message;
 			}
@@ -72,12 +70,11 @@ describe("GRPCDefintionTranslator message test", () => {
 	});
 
 	it("Should convert oneof fields correctly", async () => {
-		let data = ProtoDefinition.FromPackageDefinition(await protoLoader.load("test/data/messagesamples/OneofField.proto"));
+		let data = await loadFromPbjsDefinition("messagesamples/OneofField.proto");
 		
-		assert.equal(data.enums.length, 0, "There should be no enums");
-		assert.equal(data.messages.length, 2, "There should be two messages");
-		assert.equal(data.services.length, 0, "There should be no services");
+		let messages = Array.from(data.GetMessages());
+		assert.equal(messages.length, 2);
 		
-		assert.deepEqual(data.messages[1], ExpectedOneofMessage, "The message containing a oneof should be correct");
+		assert.deepEqual(messages[1], ExpectedOneofMessage, "The message containing a oneof should be correct");
 	});
 });
