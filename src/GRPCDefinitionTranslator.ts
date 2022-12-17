@@ -1,5 +1,5 @@
 import * as protoLoader from "@grpc/proto-loader";
-import { common, INamespace } from "protobufjs";
+import { common, INamespace, IType } from "protobufjs";
 
 export enum SymbolType {
 	Namespace,
@@ -204,24 +204,55 @@ export class ProtoDefinition {
 					}
 					protoDefinition.enums.set(namespaces.join(".") + "." + key, enumDefinition);
 				} else if ("fields" in val && val.fields != null) { // IType
-					let messageDefinition = new MessageDefinition(
-						new NamespacedSymbol(namespaces, new GrpcSymbol(key, SymbolType.Message)),
-						[]
-					);
-					for (let [mKey, mVal] of Object.entries(val.fields)) {
-						messageDefinition.fields.push(new MessageField(
-							new GrpcSymbol(mKey, SymbolType.Field), 
-							protoDefinition.ResolveGrpcType(namespaces, mVal.type)
-						));
-					}
-					protoDefinition.messages.set(namespaces.join(".") + "." + key, messageDefinition);
+					protoDefinition.CreateMessageDefinition(namespaces, key, val);
 				} else if ("methods" in val && val.methods != null) { //IService
 					
+				} else if ("oneofs" in val && val.oneofs != null) {
+					console.log(val);
 				} else if ("nested" in val && val.nested != null) { //INamespace
 					this.FromPbjsRecursive(namespaces.concat([new GrpcSymbol(key, SymbolType.Namespace)]), val, protoDefinition);
 				} 
 			}
 		}
+	}
+
+	private CreateMessageDefinition(namespaces: GrpcSymbol[], name: string, type: IType) {
+		let messageDefinition = new MessageDefinition(
+			new NamespacedSymbol(namespaces, new GrpcSymbol(name, SymbolType.Message)),
+			[]
+		);
+		
+		let fieldMap: Map<string, MessageField> = new Map();
+		for (let [mKey, mVal] of Object.entries(type.fields)) {
+			fieldMap.set(mKey, new MessageField(
+				new GrpcSymbol(mKey, SymbolType.Field), 
+				this.ResolveGrpcType(namespaces, mVal.type)
+			));
+		}
+
+		if (type.oneofs != null) {
+			for (let [oneOfKey, oneOf] of Object.entries(type.oneofs)) {
+				let oneOfDefinition: Record<string, GrpcType> = {};
+				for (let oneOfIndex of oneOf.oneof) {
+					let MessageField = fieldMap.get(oneOfIndex);
+					if (MessageField == null) {
+						throw new Error("Expected field to be in message");
+					}
+					oneOfDefinition[oneOfIndex] = MessageField.type;
+					fieldMap.delete(oneOfIndex);
+					console.log("removed " + oneOfIndex);
+				}
+				fieldMap.set(oneOfKey, new MessageField(new GrpcSymbol(oneOfKey, SymbolType.Field), new GrpcOneofType(oneOfDefinition)));
+			}
+		}
+		
+		for (let field of fieldMap.values()) {
+			messageDefinition.fields.push(field);
+		}
+
+		messageDefinition.fields.sort((a,b) => a.symbol.name.localeCompare(b.symbol.name));
+
+		this.messages.set(namespaces.join(".") + "." + name, messageDefinition);
 	}
 
 	private ResolveGrpcType(namespaceScope: GrpcSymbol[], accessString: string): GrpcType {

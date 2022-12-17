@@ -6,39 +6,39 @@ import { loadFromPbjsDefinition } from "../helper";
 const ExepctedSimpleMessage = new MessageDefinition(
 	NamespacedSymbol.FromString("test.data.messagesamples.SimpleMessage", SymbolType.Message),
 	[
-		new MessageField(new GrpcSymbol("username", SymbolType.Field), new GrpcType("string")),
-		new MessageField(new GrpcSymbol("someNumber", SymbolType.Field), new GrpcType("uint32")),
-		new MessageField(new GrpcSymbol("signedNumber", SymbolType.Field), new GrpcType("int32")),
 		new MessageField(new GrpcSymbol("anotherString", SymbolType.Field), new GrpcType("string")),
+		new MessageField(new GrpcSymbol("signedNumber", SymbolType.Field), new GrpcType("int32")),
+		new MessageField(new GrpcSymbol("someNumber", SymbolType.Field), new GrpcType("uint32")),
+		new MessageField(new GrpcSymbol("username", SymbolType.Field), new GrpcType("string")),
 	]
 );
 
 const ExpectedAdvancedMessage = new MessageDefinition(
 	NamespacedSymbol.FromString("test.data.messagesamples.AdvancedMessage", SymbolType.Message),
 	[
-		new MessageField(new GrpcSymbol("username", SymbolType.Field), new GrpcType("string")),
-		new MessageField(new GrpcSymbol("someNumber", SymbolType.Field), new GrpcType("uint32")),
-		new MessageField(new GrpcSymbol("signedNumber", SymbolType.Field), new GrpcType("int32")),
 		new MessageField(new GrpcSymbol("anotherString", SymbolType.Field), new GrpcType("string")),
-		new MessageField(new GrpcSymbol("status", SymbolType.Field), new GrpcEnumType(
-			NamespacedSymbol.FromString("test.data.messagesamples.Status", SymbolType.Enum))
-		),
 		new MessageField(new GrpcSymbol("nestedMessage", SymbolType.Field), new GrpcMessageType(
 			NamespacedSymbol.FromString("test.data.messagesamples.SimpleMessage", SymbolType.Message))
 		),
-	]
+		new MessageField(new GrpcSymbol("signedNumber", SymbolType.Field), new GrpcType("int32")),
+		new MessageField(new GrpcSymbol("someNumber", SymbolType.Field), new GrpcType("uint32")),
+		new MessageField(new GrpcSymbol("status", SymbolType.Field), new GrpcEnumType(
+			NamespacedSymbol.FromString("test.data.messagesamples.Status", SymbolType.Enum))
+		),
+		new MessageField(new GrpcSymbol("username", SymbolType.Field), new GrpcType("string")),
+	].sort()
 )
 
 const ExpectedOneofMessage = new MessageDefinition(
-	NamespacedSymbol.FromString("test.data.messagesamples.OneofField", SymbolType.Message),
+	NamespacedSymbol.FromString("test.data.messagesamples.OneofContainer", SymbolType.Message),
 	[
-		new MessageField(new GrpcSymbol("someOtherField", SymbolType.Field), new GrpcType("string")),
-		new MessageField(new GrpcSymbol("oneOfField", SymbolType.Field), new GrpcOneofType({
+		new MessageField(new GrpcSymbol("oneofField", SymbolType.Field), new GrpcOneofType({
 				someMessage: new GrpcMessageType(NamespacedSymbol.FromString("test.data.messagesamples.SomeMessage", SymbolType.Message)),
 				str: new GrpcType("string"),
-				j: new GrpcType("int32"),
+				i: new GrpcType("int32"),
 			}
 		)),
+		new MessageField(new GrpcSymbol("someOtherField", SymbolType.Field), new GrpcType("string")),
 		new MessageField(new GrpcSymbol("someOtherField2", SymbolType.Field), new GrpcType("string"))
 	]
 )
@@ -75,6 +75,10 @@ describe("GRPCDefintionTranslator message test", () => {
 		let messages = Array.from(data.GetMessages());
 		assert.equal(messages.length, 2);
 		
-		assert.deepEqual(messages[1], ExpectedOneofMessage, "The message containing a oneof should be correct");
+		for (let message of messages) {
+			if (message.symbol.name.name == "OneofContainer") {
+				assert.deepEqual(message, ExpectedOneofMessage, "The message containing a oneof should be correct");
+			}
+		}
 	});
 });
