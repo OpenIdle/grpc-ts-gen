@@ -4,7 +4,7 @@
   "description": "",
   "main": "./dist/src/grpc-ts-gen.ts",
   "scripts": {
-    "test": "npx mocha --parallel dist/test/**/*.js"
+    "test": "npx mocha"
   },
   "repository": {
     "type": "git",

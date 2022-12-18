@@ -26,7 +26,7 @@ const ExpectedAdvancedMessage = new MessageDefinition(
 			NamespacedSymbol.FromString("test.data.messagesamples.Status", SymbolType.Enum))
 		),
 		new MessageField(new GrpcSymbol("username", SymbolType.Field), new GrpcType("string")),
-	].sort()
+	]
 )
 
 const ExpectedOneofMessage = new MessageDefinition(

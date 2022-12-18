@@ -206,6 +206,14 @@ export class ProtoDefinition {
 				if (field.type instanceof UnresolvedForwardDependencyType) {
 					field.type = this.ResolveForwardDependencyType(field.type);
 				}
+				if (field.type instanceof GrpcOneofType) {
+					for (let oneofKey of Object.keys(field.type.definition)) {
+						let val = field.type.definition[oneofKey];
+						if (val instanceof UnresolvedForwardDependencyType) {
+							field.type.definition[oneofKey] = this.ResolveForwardDependencyType(val);
+						}
+					}
+				}
 			}
 		}
 
@@ -224,7 +232,7 @@ export class ProtoDefinition {
 	private ResolveForwardDependencyType(type: UnresolvedForwardDependencyType) {
 		let resolvedType = this.ResolveGrpcType(type.namespaces, type.accessString);
 		if (resolvedType instanceof UnresolvedForwardDependencyType) {
-			throw new Error(`Cannot resolve type "${resolvedType.accessString}" from namespace "${resolvedType.namespaces.join(".")}"`);
+			throw new Error(`Cannot resolve type "${resolvedType.accessString}" from namespace "${ProtoDefinition.NamespacesToString(resolvedType.namespaces)}"`);
 		}
 		return resolvedType;
 	}
@@ -255,7 +263,7 @@ export class ProtoDefinition {
 				new EnumValue(new GrpcSymbol(enumKey, SymbolType.EnumValue), enumValue)
 			);
 		}
-		this.enums.set(namespaces.join(".") + "." + name, enumDefinition);
+		this.enums.set(ProtoDefinition.NamespacesToString(namespaces) + "." + name, enumDefinition);
 	}
 
 	private CreateServiceDefinition(namespaces: GrpcSymbol[], name: string, service: IService) {
@@ -269,7 +277,7 @@ export class ProtoDefinition {
 				)
 			);
 		}
-		this.services.set(namespaces.join(".") + "." + name, serviceDefinition);
+		this.services.set(ProtoDefinition.NamespacesToString(namespaces) + "." + name, serviceDefinition);
 
 	}
 
@@ -308,7 +316,7 @@ export class ProtoDefinition {
 
 		messageDefinition.fields.sort((a,b) => a.symbol.name.localeCompare(b.symbol.name));
 
-		this.messages.set(namespaces.join(".") + "." + name, messageDefinition);
+		this.messages.set(ProtoDefinition.NamespacesToString(namespaces) + "." + name, messageDefinition);
 	}
 
 	private ResolveGrpcType(namespaceScope: GrpcSymbol[], accessString: string): GrpcType {
@@ -321,7 +329,7 @@ export class ProtoDefinition {
 
 		let currentNamespaceStack = namespaceScope.slice();
 		while (currentNamespaceStack.length > 0) {
-			let fullName = currentNamespaceStack.join(".") + "." + accessString;
+			let fullName = ProtoDefinition.NamespacesToString(currentNamespaceStack) + "." + accessString;
 			if (message = this.messages.get(fullName))
 				return new GrpcMessageType(message.symbol);
 
@@ -336,6 +344,10 @@ export class ProtoDefinition {
 			return new GrpcEnumType(_enum.symbol);
 		
 		return new UnresolvedForwardDependencyType(accessString, namespaceScope);
+	}
+
+	private static NamespacesToString(namespaces: GrpcSymbol[]): string {
+		return namespaces.map(x => x.name).join(".")
 	}
 
 	public GetMessages(): IterableIterator<MessageDefinition> {

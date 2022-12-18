@@ -1,7 +1,7 @@
 import { PackageDefinition } from "@grpc/proto-loader";
 import { INamespace } from "protobufjs";
 import CodeGenerator from "./CodeGenerator";
-import { EnumDefinition, GrpcEnumType, GrpcMessageType, GrpcSymbol, GrpcType, MessageDefinition, NamespacedSymbol, ServiceDefinition, SymbolType } from "./GRPCDefinitionTranslator";
+import { EnumDefinition, GrpcEnumType, GrpcMessageType, GrpcOneofType, GrpcSymbol, GrpcType, MessageDefinition, NamespacedSymbol, ServiceDefinition, SymbolType } from "./GRPCDefinitionTranslator";
 import { ICodeWriter } from "./ICodeWriter";
 import { INamingTransformer } from "./INamingTransformer";
 import { TSCodeGenerator } from "./TSCodeGenerator";
@@ -38,6 +38,11 @@ export class TSWriter implements ICodeWriter {
 	private GetTSTypeName(type: GrpcType): string {
 		if (type instanceof GrpcEnumType || type instanceof GrpcMessageType) {
 			return this.GetFullSymbolName(type.symbol)
+		}
+		if (type instanceof GrpcOneofType) {
+			return Object.values(type.definition)
+				.map(x => this.GetTSTypeName(x))
+				.join(" | ") + " | null";
 		}
 		switch (type.type) {
 			case "string":

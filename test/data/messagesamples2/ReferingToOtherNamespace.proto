@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+import "messagesamples/SimpleMessage.proto";
+import "enumsamples/SimpleEnum.proto";
+
+package test.data.messagesamples2;
+
+message ImportedDependencies {
+	enumsamples.Status status = 1;
+	messagesamples.SimpleMessage nestedMessage = 2;
+	oneof oneofField {
+        messagesamples.SimpleMessage someMessage = 3;
+    }
+}
+

@@ -15,6 +15,9 @@ message SimpleRequest {
 	uint32 someNumber = 2;
 	int32 signedNumber = 3;
 	string anotherString = 4;
+	oneof oneOfField {
+		SimpleResponse simpleResponse = 5;
+	}
 }
 
 message SimpleResponse {

@@ -2,11 +2,6 @@ syntax = "proto3";
 
 package test.data.messagesamples;
 
-message SomeMessage {
-    string field1 = 1;
-    string field2 = 2;
-}
-
 message OneofContainer {
 	string someOtherField = 1;
     oneof oneofField {
@@ -15,4 +10,9 @@ message OneofContainer {
         int32 i = 4;
     }
     string someOtherField2 = 5;
+}
+
+message SomeMessage {
+    string field1 = 1;
+    string field2 = 2;
 }
