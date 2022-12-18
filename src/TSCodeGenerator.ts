@@ -1,5 +1,5 @@
 import CodeGenerator from "./CodeGenerator";
-import { GrpcSymbol, NamespacedSymbol } from "./GRPCDefinitionTranslator";
+import { GrpcSymbol } from "./GRPCDefinitionTranslator";
 import { INamingTransformer } from "./INamingTransformer";
 
 
@@ -17,10 +17,14 @@ export class TSCodeGenerator {
 	}
 
 	private AddLineData(data: {line: string} | {indent: true} | {unindent: true}) {
-		let namespaceIdentifier = this._currentNamespaceStack.join(".");
-		this._namespaceRelativeLines
-			.get(namespaceIdentifier)!.data
-			.push(data);
+		const namespaceIdentifier = this._currentNamespaceStack.join(".");
+		const relativeLines = this._namespaceRelativeLines.get(namespaceIdentifier);
+		
+		if (relativeLines == null) {
+			throw new Error("Tried to add line data from non existant namespace");
+		}
+
+		relativeLines.data.push(data);
 	}
 
 	AddLine(line: string) {
@@ -40,7 +44,7 @@ export class TSCodeGenerator {
 		this.Indent();
 		cb();
 		this.Unindent();
-		this.AddLine(`}`);
+		this.AddLine("}");
 	}
 
 	DefineEnum(name: GrpcSymbol, cb: () => void) {
@@ -48,12 +52,12 @@ export class TSCodeGenerator {
 		this.Indent();
 		cb();
 		this.Unindent();
-		this.AddLine(`}`);
+		this.AddLine("}");
 	}
 
 	Namespace(namespaces: GrpcSymbol[], cb: () => void) {
 		this._currentNamespaceStack = namespaces.map((x) => this._namingTransformer.ConvertSymbol(x));
-		let namespaceIdentifier = this._currentNamespaceStack.join(".");
+		const namespaceIdentifier = this._currentNamespaceStack.join(".");
 		if (!this._namespaceRelativeLines.has(namespaceIdentifier)) {
 			this._namespaceRelativeLines.set(namespaceIdentifier, {data: []});
 		}
@@ -62,15 +66,15 @@ export class TSCodeGenerator {
 	}
 
 	Generate(): string {
-		for (let [namespaceIdentifier, linesData] of this._namespaceRelativeLines) {
+		for (const [namespaceIdentifier, linesData] of this._namespaceRelativeLines) {
 			if (linesData.data.length > 0) {
-				let namespaces = namespaceIdentifier.split(".");
-				for (let _namespace of namespaces) {
+				const namespaces = namespaceIdentifier.split(".");
+				for (const _namespace of namespaces) {
 					this._codeGenerator.AddLine(`export namespace ${_namespace} {`);
 					this._codeGenerator.Indent();
 				}
 
-				for (let lineData of linesData.data) {
+				for (const lineData of linesData.data) {
 					if ("indent" in lineData) {
 						this._codeGenerator.Indent();
 					} else if ("unindent" in lineData) {
@@ -82,7 +86,7 @@ export class TSCodeGenerator {
 
 				for (let i = 0; i < namespaces.length; i++) {
 					this._codeGenerator.Unindent();
-					this._codeGenerator.AddLine(`}`);
+					this._codeGenerator.AddLine("}");
 				}
 			}
 		}

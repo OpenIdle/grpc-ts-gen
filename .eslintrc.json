@@ -10,7 +10,9 @@
     "overrides": [{
         "files": [
             "src/**/*.ts",
-            "src/*.ts"
+            "src/*.ts",
+            "test/**/*.ts",
+            "test/*.ts"
         ]
     }],
     "parser": "@typescript-eslint/parser",
@@ -24,13 +26,18 @@
     "rules": {
         "indent": [
             "error",
-            "tab"
+            "tab",
+            {"SwitchCase": 1}
         ],
         "quotes": [
             "error",
             "double"
         ],
         "semi": [
+            "error",
+            "always"
+        ],
+        "eol-last": [
             "error",
             "always"
         ]

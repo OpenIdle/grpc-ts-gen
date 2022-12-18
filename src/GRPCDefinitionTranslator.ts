@@ -1,5 +1,4 @@
-import * as protoLoader from "@grpc/proto-loader";
-import { common, IEnum, INamespace, IService, IType } from "protobufjs";
+import { IEnum, INamespace, IService, IType } from "protobufjs";
 
 export enum SymbolType {
 	Namespace,
@@ -24,7 +23,7 @@ export class GrpcSymbol {
 		}
 
 		let allCharactersUppercase = true;
-		for (let c of this.name) {
+		for (const c of this.name) {
 			if (c.toUpperCase() != c) {
 				allCharactersUppercase = false;
 				break;
@@ -39,10 +38,10 @@ export class GrpcSymbol {
 			return this.name
 				.split("_")
 				.map((part) => {
-					let splitted = [];
+					const splitted = [];
 					let acc = "";
 					for (let i = 0; i < part.length; i++) {
-						let c = part.charAt(i);
+						const c = part.charAt(i);
 						if (c.toUpperCase() == c) {
 							if (acc.length != 0) {
 								splitted.push(acc);
@@ -72,8 +71,8 @@ export class NamespacedSymbol {
 	}
 
 	static FromString(fullName: string, symbolType: SymbolType): NamespacedSymbol {
-		let split = fullName.split(".");
-		let [name] = split.splice(split.length - 1, 1);
+		const split = fullName.split(".");
+		const [name] = split.splice(split.length - 1, 1);
 		return new NamespacedSymbol(
 			split.map(x => new GrpcSymbol(x, SymbolType.Namespace)),
 			new GrpcSymbol(name, symbolType)
@@ -91,7 +90,7 @@ export class NamespacedSymbol {
 type GrpcBuiltInTypeStrings = "MESSAGE" | "ENUM" | "ONEOF" | "UNRESOLVED" | "string" | "uint32" | "int32" | "uint64" | "int64";
 const GrpcBuiltInTypeSet: Set<GrpcBuiltInTypeStrings> = new Set(["MESSAGE", "ENUM", "ONEOF", "UNRESOLVED", "string", "uint32", "int32", "uint64", "int64"]);
 export class GrpcType {
-	type: GrpcBuiltInTypeStrings
+	type: GrpcBuiltInTypeStrings;
 	constructor(type: GrpcBuiltInTypeStrings) {
 		this.type = type;
 	}
@@ -196,7 +195,7 @@ export class ProtoDefinition {
 	}
 	
 	static FromPbjs(root: INamespace): ProtoDefinition {
-		let rv = new ProtoDefinition();
+		const rv = new ProtoDefinition();
 
 		this.FromPbjsRecursive([], root, rv);
 
@@ -205,14 +204,14 @@ export class ProtoDefinition {
 	}
 
 	private ResolveForwardDependencies() {
-		for (let message of this.messages.values()) {
-			for (let field of message.fields) {
+		for (const message of this.messages.values()) {
+			for (const field of message.fields) {
 				if (field.type instanceof UnresolvedForwardDependencyType) {
 					field.type = this.ResolveForwardDependencyType(field.type);
 				}
 				if (field.type instanceof GrpcOneofType) {
-					for (let oneofKey of Object.keys(field.type.definition)) {
-						let val = field.type.definition[oneofKey];
+					for (const oneofKey of Object.keys(field.type.definition)) {
+						const val = field.type.definition[oneofKey];
 						if (val instanceof UnresolvedForwardDependencyType) {
 							field.type.definition[oneofKey] = this.ResolveForwardDependencyType(val);
 						}
@@ -221,8 +220,8 @@ export class ProtoDefinition {
 			}
 		}
 
-		for (let service of this.services.values()) {
-			for (let method of service.methods) {
+		for (const service of this.services.values()) {
+			for (const method of service.methods) {
 				if (method.inputType instanceof UnresolvedForwardDependencyType) {
 					method.inputType = this.ResolveForwardDependencyType(method.inputType);
 				}
@@ -234,7 +233,7 @@ export class ProtoDefinition {
 	}
 
 	private ResolveForwardDependencyType(type: UnresolvedForwardDependencyType) {
-		let resolvedType = this.ResolveGrpcType(type.namespaces, type.accessString);
+		const resolvedType = this.ResolveGrpcType(type.namespaces, type.accessString);
 		if (resolvedType instanceof UnresolvedForwardDependencyType) {
 			throw new Error(`Cannot resolve type "${resolvedType.accessString}" from namespace "${ProtoDefinition.NamespacesToString(resolvedType.namespaces)}"`);
 		}
@@ -243,7 +242,7 @@ export class ProtoDefinition {
 
 	private static FromPbjsRecursive(namespaces: GrpcSymbol[], root: INamespace, protoDefinition: ProtoDefinition): void {
 		if (root.nested != null) {
-			for (let [key, val] of Object.entries(root.nested)) {
+			for (const [key, val] of Object.entries(root.nested)) {
 				if ("values" in val && val.values != null) { //IEnum
 					protoDefinition.CreateEnumDefinition(namespaces, key, val);		
 				} else if ("fields" in val && val.fields != null) { // IType
@@ -258,11 +257,11 @@ export class ProtoDefinition {
 	}
 
 	private CreateEnumDefinition(namespaces: GrpcSymbol[], name: string, _enum: IEnum) {
-		let enumDefinition = new EnumDefinition(
+		const enumDefinition = new EnumDefinition(
 			new NamespacedSymbol(namespaces, new GrpcSymbol(name, SymbolType.Enum)),
 			[]
 		);
-		for (let [enumKey, enumValue] of Object.entries(_enum.values)) {
+		for (const [enumKey, enumValue] of Object.entries(_enum.values)) {
 			enumDefinition.values.push(
 				new EnumValue(new GrpcSymbol(enumKey, SymbolType.EnumValue), enumValue)
 			);
@@ -271,8 +270,8 @@ export class ProtoDefinition {
 	}
 
 	private CreateServiceDefinition(namespaces: GrpcSymbol[], name: string, service: IService) {
-		let serviceDefinition = new ServiceDefinition(new NamespacedSymbol(namespaces, new GrpcSymbol(name, SymbolType.Service)), []);
-		for (let [methodName, method] of Object.entries(service.methods)) {
+		const serviceDefinition = new ServiceDefinition(new NamespacedSymbol(namespaces, new GrpcSymbol(name, SymbolType.Service)), []);
+		for (const [methodName, method] of Object.entries(service.methods)) {
 			serviceDefinition.methods.push(
 				new ServiceMethod(
 					new GrpcSymbol(methodName, SymbolType.Procedure), 
@@ -286,13 +285,13 @@ export class ProtoDefinition {
 	}
 
 	private CreateMessageDefinition(namespaces: GrpcSymbol[], name: string, type: IType) {
-		let messageDefinition = new MessageDefinition(
+		const messageDefinition = new MessageDefinition(
 			new NamespacedSymbol(namespaces, new GrpcSymbol(name, SymbolType.Message)),
 			[]
 		);
 		
-		let fieldMap: Map<string, MessageField> = new Map();
-		for (let [mKey, mVal] of Object.entries(type.fields)) {
+		const fieldMap: Map<string, MessageField> = new Map();
+		for (const [mKey, mVal] of Object.entries(type.fields)) {
 			fieldMap.set(mKey, new MessageField(
 				new GrpcSymbol(mKey, SymbolType.Field), 
 				this.ResolveGrpcType(namespaces, mVal.type)
@@ -300,10 +299,10 @@ export class ProtoDefinition {
 		}
 
 		if (type.oneofs != null) {
-			for (let [oneOfKey, oneOf] of Object.entries(type.oneofs)) {
-				let oneOfDefinition: Record<string, GrpcType> = {};
-				for (let oneOfIndex of oneOf.oneof) {
-					let MessageField = fieldMap.get(oneOfIndex);
+			for (const [oneOfKey, oneOf] of Object.entries(type.oneofs)) {
+				const oneOfDefinition: Record<string, GrpcType> = {};
+				for (const oneOfIndex of oneOf.oneof) {
+					const MessageField = fieldMap.get(oneOfIndex);
 					if (MessageField == null) {
 						throw new Error("Expected field to be in message");
 					}
@@ -314,7 +313,7 @@ export class ProtoDefinition {
 			}
 		}
 		
-		for (let field of fieldMap.values()) {
+		for (const field of fieldMap.values()) {
 			messageDefinition.fields.push(field);
 		}
 
@@ -328,30 +327,32 @@ export class ProtoDefinition {
 			return new GrpcType(accessString as GrpcBuiltInTypeStrings);
 		}
 
-		let message: MessageDefinition | undefined;
-		let _enum: EnumDefinition | undefined;
-
-		let currentNamespaceStack = namespaceScope.slice();
+		const currentNamespaceStack = namespaceScope.slice();
 		while (currentNamespaceStack.length > 0) {
-			let fullName = ProtoDefinition.NamespacesToString(currentNamespaceStack) + "." + accessString;
-			if (message = this.messages.get(fullName))
+			const fullName = ProtoDefinition.NamespacesToString(currentNamespaceStack) + "." + accessString;
+			const message = this.messages.get(fullName);
+			if (message)
 				return new GrpcMessageType(message.symbol);
 
-			if (_enum = this.enums.get(fullName))
+			const _enum = this.enums.get(fullName);
+			if (_enum)
 				return new GrpcEnumType(_enum.symbol);
-				currentNamespaceStack.splice(currentNamespaceStack.length-1);
+			
+			currentNamespaceStack.splice(currentNamespaceStack.length-1);
 		}
-		if (message = this.messages.get(accessString))
+		const message = this.messages.get(accessString);
+		if (message)
 			return new GrpcMessageType(message.symbol);
 		
-		if (_enum = this.enums.get(accessString))
+		const _enum = this.enums.get(accessString);
+		if (_enum)
 			return new GrpcEnumType(_enum.symbol);
 		
 		return new UnresolvedForwardDependencyType(accessString, namespaceScope);
 	}
 
 	private static NamespacesToString(namespaces: GrpcSymbol[]): string {
-		return namespaces.map(x => x.name).join(".")
+		return namespaces.map(x => x.name).join(".");
 	}
 
 	public GetMessages(): IterableIterator<MessageDefinition> {
@@ -367,17 +368,17 @@ export class ProtoDefinition {
 	}
 
 	public FindMessage(symbol: NamespacedSymbol): MessageDefinition {
-		let message = this.messages.get(symbol.Assemble());
+		const message = this.messages.get(symbol.Assemble());
 		if (message == null) {
-			throw new Error("Tried to look up message that does not exist")
+			throw new Error("Tried to look up message that does not exist");
 		}
 		return message;
 	}
 
 	public FindEnum(symbol: NamespacedSymbol): EnumDefinition {
-		let _enum = this.enums.get(symbol.Assemble());
+		const _enum = this.enums.get(symbol.Assemble());
 		if (_enum == null) {
-			throw new Error("Tried to look up enum that does not exist")
+			throw new Error("Tried to look up enum that does not exist");
 		}
 		return _enum;
 	}
