@@ -20,7 +20,7 @@ export default class CodeGenerator {
 	Unindent() {
 		this._currentIndentation--;
 		if (this._currentIndentation < 0) {
-			throw new Error("Unmatched unindent")
+			throw new Error("Unmatched unindent");
 		}
 	}
 

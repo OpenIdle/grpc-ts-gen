@@ -1,5 +1,4 @@
-import { EnumDefinition, EnumValue, GrpcSymbol, NamespacedSymbol, ProtoDefinition, SymbolType } from "../../src/GRPCDefinitionTranslator";
-import * as  protoLoader from "@grpc/proto-loader";
+import { EnumDefinition, EnumValue, GrpcSymbol, NamespacedSymbol, SymbolType } from "../../src/GRPCDefinitionTranslator";
 import { assert } from "chai";
 import { loadFromPbjsDefinition } from "../helper";
 
@@ -25,32 +24,32 @@ const ExpectedStatusData = new EnumDefinition(
 
 describe("GRPCDefintionTranslator enums test", () => {
 	it("Should convert enums correctly", async () => {
-		let data = await loadFromPbjsDefinition("enumsamples/SimpleEnum.proto");
-		let enums = Array.from(data.GetEnums());
+		const data = await loadFromPbjsDefinition("enumsamples/SimpleEnum.proto");
+		const enums = Array.from(data.GetEnums());
 		assert.equal(enums.length, 1);
 		assert.deepEqual(enums[0], ExpectedStatusData);
-	})
+	});
 
 	it("Should convert holey enums correctly", async () => {
-		let data = await loadFromPbjsDefinition("enumsamples/HoleyEnum.proto");
+		const data = await loadFromPbjsDefinition("enumsamples/HoleyEnum.proto");
 		
-		let enums = Array.from(data.GetEnums());
+		const enums = Array.from(data.GetEnums());
 		assert.equal(enums.length, 1);
 		assert.deepEqual(enums[0], ExpectedHoleyStatusData);
-	})
+	});
 
 	it("Should convert multiple enums correctly", async () => {
-		let data = await loadFromPbjsDefinition([
+		const data = await loadFromPbjsDefinition([
 			"enumsamples/HoleyEnum.proto", 
 			"enumsamples/SimpleEnum.proto"
 		]);
 		
-		let enums = Array.from(data.GetEnums());
+		const enums = Array.from(data.GetEnums());
 		assert.equal(enums.length, 2);
 
-		let enumNames: Set<string> = new Set();
+		const enumNames: Set<string> = new Set();
 		
-		for (let _enum of enums) {
+		for (const _enum of enums) {
 			assert.oneOf(_enum.symbol.name.name, [
 				ExpectedHoleyStatusData.symbol.name.name,
 				ExpectedStatusData.symbol.name.name
@@ -64,5 +63,5 @@ describe("GRPCDefintionTranslator enums test", () => {
 		}
 
 		assert.equal(enumNames.size, 2);
-	})
+	});
 });

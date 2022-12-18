@@ -6,12 +6,12 @@ export async function loadFromPbjsDefinition(path: string): Promise<ProtoDefinit
 export async function loadFromPbjsDefinition(path: string[]): Promise<ProtoDefinition>;
 
 export async function loadFromPbjsDefinition(filenames: string | string[]): Promise<ProtoDefinition> {
-    let root = new protobuf.Root();
+	const root = new protobuf.Root();
 	root.resolvePath = (origin, target) => {
 		return join("test/data/", target);
-	}
+	};
 		
-	let description = await protobuf.load(filenames, root);
-	let data = ProtoDefinition.FromPbjs(description.toJSON());
-	return data;	
+	const description = await protobuf.load(filenames, root);
+	const data = ProtoDefinition.FromPbjs(description.toJSON());
+	return data;
 }

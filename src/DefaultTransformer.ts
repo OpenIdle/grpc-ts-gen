@@ -3,10 +3,6 @@ import { GrpcSymbol, SymbolType } from "./GRPCDefinitionTranslator";
 import { INamingTransformer } from "./INamingTransformer";
 
 export class DefaultTransformer implements INamingTransformer {
-	constructor() {
-
-	}
-
 	ConvertSymbol(symbol: GrpcSymbol): string {
 		switch (symbol.type) {
 			case SymbolType.Enum:
@@ -24,7 +20,7 @@ export class DefaultTransformer implements INamingTransformer {
 			case SymbolType.Service:
 				return ToPascalCase(symbol.Decompose());
 			default:
-				throw new Error("Unknown symbol type")
+				throw new Error("Unknown symbol type");
 		}
 	}
 }

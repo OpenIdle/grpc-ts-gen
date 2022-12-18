@@ -1,22 +1,20 @@
 #!/usr/bin/env node
 
 import {readdir, readFile, stat } from "fs/promises";
-import { extname, join, relative, resolve } from "path";
+import { extname, join, relative } from "path";
 import * as  protoLoader from "@grpc/proto-loader";
-import CodeGenerator from "./CodeGenerator";
 import { ProtoDefinition } from "./GRPCDefinitionTranslator";
 import { ICodeWriter } from "./ICodeWriter";
 import { VirtualDirectory, WriteVirtualDirectory } from "./VirtualDirectory";
 import { TSWriter } from "./TSCodeWriter";
-import { INamingTransformer } from "./INamingTransformer";
 import protobuf from "protobufjs";
 import { DefaultTransformer } from "./DefaultTransformer";
 
 async function GatherAllProtoFiles(searchDirectory: string): Promise<string[]> {
-	let directory = await readdir(searchDirectory);
+	const directory = await readdir(searchDirectory);
 	return (await Promise.all(directory.map(async (filename) => {
-		let combinedPath = join(searchDirectory, filename);
-		let entry = await stat(combinedPath);
+		const combinedPath = join(searchDirectory, filename);
+		const entry = await stat(combinedPath);
 		if (entry.isFile()) {
 			if (extname(filename) == ".proto") {
 				return [combinedPath];
@@ -25,7 +23,7 @@ async function GatherAllProtoFiles(searchDirectory: string): Promise<string[]> {
 		} else {
 			return GatherAllProtoFiles(combinedPath);
 		}
-	}))).flat()
+	}))).flat();
 }
 
 class TypeDefinitionCreator {
@@ -35,29 +33,29 @@ class TypeDefinitionCreator {
 	}
 
 	async Create(protoBasePath: string): Promise<VirtualDirectory> {
-		let files = (await GatherAllProtoFiles(protoBasePath)).map(path => relative(protoBasePath, path));
-		let protos = await protoLoader.load(files, {
+		const files = (await GatherAllProtoFiles(protoBasePath)).map(path => relative(protoBasePath, path));
+		const protos = await protoLoader.load(files, {
 			includeDirs: [protoBasePath]
 		});
 
-		let root = new protobuf.Root();
+		const root = new protobuf.Root();
 		root.resolvePath = (origin, target) => {
 			return join(protoBasePath, target);
-		}
+		};
 		
-		let protobufJsJSON = await protobuf.load(files, root);
+		const protobufJsJSON = await protobuf.load(files, root);
 		
-		let definition = ProtoDefinition.FromPbjs(protobufJsJSON);
+		const definition = ProtoDefinition.FromPbjs(protobufJsJSON);
 
-		for (let message of definition.GetMessages()) {
+		for (const message of definition.GetMessages()) {
 			this._codeWriter.WriteMessageInterface(message);
 		}
 
-		for (let _enum of definition.GetEnums()) {
+		for (const _enum of definition.GetEnums()) {
 			this._codeWriter.WriteEnum(_enum);
 		}
 
-		for (let service of definition.GetServices()) {
+		for (const service of definition.GetServices()) {
 			this._codeWriter.WriteServiceInterface(service);
 		}
 		
@@ -75,11 +73,11 @@ interface ProgramOptions {
 }
 
 async function main(args: string[]): Promise<number> {
-	let customOptions: Partial<ProgramOptions> = {};
+	const customOptions: Partial<ProgramOptions> = {};
 
 	try {
-		let configFile = await readFile("grpc-ts-gen.config.json");
-		let fileConfig = JSON.parse(configFile.toString());
+		const configFile = await readFile("grpc-ts-gen.config.json");
+		const fileConfig = JSON.parse(configFile.toString());
 		if (typeof(fileConfig) != "object") {
 			throw new Error("grpc-ts-gen.config.json is invalid");
 		}
@@ -108,7 +106,7 @@ async function main(args: string[]): Promise<number> {
 			customOptions.requestBodyAsParameters = !fileConfig.requestBodyAsObject;
 		}
 	} catch (e) {
-		if (e == null || typeof(e) != "object" || (e as any).code != "ENOENT") {
+		if (e == null || typeof(e) != "object" || (e as Record<string, string>).code != "ENOENT") {
 			throw e;
 		}
 	}
@@ -121,7 +119,7 @@ async function main(args: string[]): Promise<number> {
 				continue;
 			} else if (args[i].toLowerCase() == "--outpath") {
 				customOptions.outPath = args[i + 1];
-				i++
+				i++;
 				continue;
 			} else if (args[i].toLowerCase() == "--servername") {
 				customOptions.serverName = args[i + 1];
@@ -145,21 +143,21 @@ async function main(args: string[]): Promise<number> {
 		return 1;
 	}
 
-	let options: ProgramOptions = {
+	const options: ProgramOptions = {
 		requestBodyAsParameters: customOptions.requestBodyAsParameters ?? true,
 		serverName: customOptions.serverName ?? "Proto",
 		protoBasePath: customOptions.protoBasePath,
 		outPath: customOptions.outPath
 	};
 
-	let creator = new TypeDefinitionCreator(
+	const creator = new TypeDefinitionCreator(
 		new TSWriter(
 			new DefaultTransformer(), 
 			options.requestBodyAsParameters,
 			options.serverName
 		)
 	);
-	let vd = await creator.Create(options.protoBasePath);
+	const vd = await creator.Create(options.protoBasePath);
 	await WriteVirtualDirectory(vd, options.outPath);
 	return 0;
 }
@@ -171,4 +169,4 @@ main(process.argv)
 	.catch((e) => {
 		console.log(e);
 		process.exit(1);
-	})
+	});
