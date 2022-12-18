@@ -25,12 +25,16 @@
     "grpc-ts-gen": "./dist/grpc-ts-gen.js"
   },
   "files": [
+    "dist/src/CasingGenerator.js",
     "dist/src/CodeGenerator.js",
+    "dist/src/DefaultTransformer.js",
     "dist/src/grpc-ts-gen.js",
     "dist/src/GRPCDefinitionTranslator.js",
     "dist/src/ICodeWriter.js",
     "dist/src/INamingTransformer.js",
-    "dist/src/NamespaceAwareCodeGenerator.js",
+    "dist/src/index.d.ts",
+    "dist/src/index.js",
+    "dist/src/TSCodeGenerator.js",
     "dist/src/TSCodeWriter.js",
     "dist/src/VirtualDirectory.js"
   ],
