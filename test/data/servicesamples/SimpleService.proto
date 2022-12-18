@@ -19,4 +19,7 @@ message SimpleResponse {
 service SimpleService {
 	rpc method1(stream SimpleRequest) returns (stream SimpleResponse);
 	rpc method2(stream SimpleRequest) returns (stream SimpleRequest);
+	rpc method3(SimpleRequest) returns (stream SimpleResponse);
+	rpc method4(stream SimpleRequest) returns (SimpleResponse);
+	rpc method5(SimpleRequest) returns (SimpleResponse);
 }

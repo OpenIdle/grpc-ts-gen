@@ -1,5 +1,5 @@
 import * as protoLoader from "@grpc/proto-loader";
-import { common, INamespace, IType } from "protobufjs";
+import { common, INamespace, IService, IType } from "protobufjs";
 
 export enum SymbolType {
 	Namespace,
@@ -189,7 +189,6 @@ export class ProtoDefinition {
 	}
 
 	private static FromPbjsRecursive(namespaces: GrpcSymbol[], root: INamespace, protoDefinition: ProtoDefinition): void {
-
 		if (root.nested != null) {
 			for (let [key, val] of Object.entries(root.nested)) {
 				if ("values" in val && val.values != null) { //IEnum
@@ -206,14 +205,27 @@ export class ProtoDefinition {
 				} else if ("fields" in val && val.fields != null) { // IType
 					protoDefinition.CreateMessageDefinition(namespaces, key, val);
 				} else if ("methods" in val && val.methods != null) { //IService
-					
-				} else if ("oneofs" in val && val.oneofs != null) {
-					console.log(val);
+					protoDefinition.CreateServiceDefinition(namespaces, key, val);
 				} else if ("nested" in val && val.nested != null) { //INamespace
 					this.FromPbjsRecursive(namespaces.concat([new GrpcSymbol(key, SymbolType.Namespace)]), val, protoDefinition);
 				} 
 			}
 		}
+	}
+
+	private CreateServiceDefinition(namespaces: GrpcSymbol[], name: string, service: IService) {
+		let serviceDefinition = new ServiceDefinition(new NamespacedSymbol(namespaces, new GrpcSymbol(name, SymbolType.Service)), []);
+		for (let [methodName, method] of Object.entries(service.methods)) {
+			serviceDefinition.methods.push(
+				new ServiceMethod(
+					new GrpcSymbol(methodName, SymbolType.Procedure), 
+					this.ResolveGrpcType(namespaces, method.requestType),
+					this.ResolveGrpcType(namespaces, method.responseType)
+				)
+			);
+		}
+		this.services.set(namespaces.join(".") + "." + name, serviceDefinition);
+
 	}
 
 	private CreateMessageDefinition(namespaces: GrpcSymbol[], name: string, type: IType) {
@@ -240,7 +252,6 @@ export class ProtoDefinition {
 					}
 					oneOfDefinition[oneOfIndex] = MessageField.type;
 					fieldMap.delete(oneOfIndex);
-					console.log("removed " + oneOfIndex);
 				}
 				fieldMap.set(oneOfKey, new MessageField(new GrpcSymbol(oneOfKey, SymbolType.Field), new GrpcOneofType(oneOfDefinition)));
 			}

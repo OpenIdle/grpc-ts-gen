@@ -24,7 +24,34 @@ const ExpectedSimpleService = new ServiceDefinition(
             new GrpcMessageType(
                 NamespacedSymbol.FromString("test.data.servicesamples.SimpleRequest", SymbolType.Message)
             ),
-        )
+        ),
+        new ServiceMethod(
+            new GrpcSymbol("method3", SymbolType.Procedure), 
+            new GrpcMessageType(
+                NamespacedSymbol.FromString("test.data.servicesamples.SimpleRequest", SymbolType.Message)
+            ),
+            new GrpcMessageType(
+                NamespacedSymbol.FromString("test.data.servicesamples.SimpleResponse", SymbolType.Message)
+            ),
+        ),
+        new ServiceMethod(
+            new GrpcSymbol("method4", SymbolType.Procedure), 
+            new GrpcMessageType(
+                NamespacedSymbol.FromString("test.data.servicesamples.SimpleRequest", SymbolType.Message)
+            ),
+            new GrpcMessageType(
+                NamespacedSymbol.FromString("test.data.servicesamples.SimpleResponse", SymbolType.Message)
+            ),
+        ),
+        new ServiceMethod(
+            new GrpcSymbol("method5", SymbolType.Procedure), 
+            new GrpcMessageType(
+                NamespacedSymbol.FromString("test.data.servicesamples.SimpleRequest", SymbolType.Message)
+            ),
+            new GrpcMessageType(
+                NamespacedSymbol.FromString("test.data.servicesamples.SimpleResponse", SymbolType.Message)
+            ),
+        ),
     ]
 );
 
