@@ -2,7 +2,6 @@
 
 import {readdir, readFile, stat } from "fs/promises";
 import { extname, join, relative } from "path";
-import * as  protoLoader from "@grpc/proto-loader";
 import { ProtoDefinition } from "./GRPCDefinitionTranslator";
 import { ICodeWriter } from "./ICodeWriter";
 import { VirtualDirectory, WriteVirtualDirectory } from "./VirtualDirectory";
@@ -34,9 +33,6 @@ class TypeDefinitionCreator {
 
 	async Create(protoBasePath: string): Promise<VirtualDirectory> {
 		const files = (await GatherAllProtoFiles(protoBasePath)).map(path => relative(protoBasePath, path));
-		const protos = await protoLoader.load(files, {
-			includeDirs: [protoBasePath]
-		});
 
 		const root = new protobuf.Root();
 		root.resolvePath = (origin, target) => {
@@ -59,7 +55,7 @@ class TypeDefinitionCreator {
 			this._codeWriter.WriteServiceInterface(service);
 		}
 		
-		this._codeWriter.WriteServer(definition, protos);
+		this._codeWriter.WriteServer(definition, protobufJsJSON);
 
 		return this._codeWriter.GetResult();
 	}
