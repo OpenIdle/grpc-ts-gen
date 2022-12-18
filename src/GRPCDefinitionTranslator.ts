@@ -80,6 +80,10 @@ export class NamespacedSymbol {
 		);
 	}
 
+	Assemble(): string {
+		return this.namespace.map(x => x.name).join(".") + "." + this.name.name;
+	}
+
 	namespace: GrpcSymbol[];
 	name: GrpcSymbol;
 }
@@ -263,7 +267,7 @@ export class ProtoDefinition {
 				new EnumValue(new GrpcSymbol(enumKey, SymbolType.EnumValue), enumValue)
 			);
 		}
-		this.enums.set(ProtoDefinition.NamespacesToString(namespaces) + "." + name, enumDefinition);
+		this.enums.set(enumDefinition.symbol.Assemble(), enumDefinition);
 	}
 
 	private CreateServiceDefinition(namespaces: GrpcSymbol[], name: string, service: IService) {
@@ -277,7 +281,7 @@ export class ProtoDefinition {
 				)
 			);
 		}
-		this.services.set(ProtoDefinition.NamespacesToString(namespaces) + "." + name, serviceDefinition);
+		this.services.set(serviceDefinition.symbol.Assemble(), serviceDefinition);
 
 	}
 
@@ -316,7 +320,7 @@ export class ProtoDefinition {
 
 		messageDefinition.fields.sort((a,b) => a.symbol.name.localeCompare(b.symbol.name));
 
-		this.messages.set(ProtoDefinition.NamespacesToString(namespaces) + "." + name, messageDefinition);
+		this.messages.set(messageDefinition.symbol.Assemble(), messageDefinition);
 	}
 
 	private ResolveGrpcType(namespaceScope: GrpcSymbol[], accessString: string): GrpcType {
@@ -360,6 +364,22 @@ export class ProtoDefinition {
 
 	public GetEnums(): IterableIterator<EnumDefinition> {
 		return this.enums.values();
+	}
+
+	public FindMessage(symbol: NamespacedSymbol): MessageDefinition {
+		let message = this.messages.get(symbol.Assemble());
+		if (message == null) {
+			throw new Error("Tried to look up message that does not exist")
+		}
+		return message;
+	}
+
+	public FindEnum(symbol: NamespacedSymbol): EnumDefinition {
+		let _enum = this.enums.get(symbol.Assemble());
+		if (_enum == null) {
+			throw new Error("Tried to look up enum that does not exist")
+		}
+		return _enum;
 	}
 
 	private messages: Map<string, MessageDefinition>;

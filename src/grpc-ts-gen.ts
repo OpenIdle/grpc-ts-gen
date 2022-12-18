@@ -61,7 +61,7 @@ class TypeDefinitionCreator {
 			this._codeWriter.WriteServiceInterface(service);
 		}
 		
-		this._codeWriter.WriteServer(Array.from(definition.GetServices()), protos, protobufJsJSON.toJSON());
+		this._codeWriter.WriteServer(definition, protos);
 
 		return this._codeWriter.GetResult();
 	}

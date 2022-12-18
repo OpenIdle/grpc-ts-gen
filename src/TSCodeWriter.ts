@@ -1,7 +1,7 @@
 import { PackageDefinition } from "@grpc/proto-loader";
 import { INamespace } from "protobufjs";
 import CodeGenerator from "./CodeGenerator";
-import { EnumDefinition, GrpcEnumType, GrpcMessageType, GrpcOneofType, GrpcSymbol, GrpcType, MessageDefinition, NamespacedSymbol, ServiceDefinition, SymbolType } from "./GRPCDefinitionTranslator";
+import { EnumDefinition, GrpcEnumType, GrpcMessageType, GrpcOneofType, GrpcSymbol, GrpcType, MessageDefinition, NamespacedSymbol, ProtoDefinition, ServiceDefinition, SymbolType } from "./GRPCDefinitionTranslator";
 import { ICodeWriter } from "./ICodeWriter";
 import { INamingTransformer } from "./INamingTransformer";
 import { TSCodeGenerator } from "./TSCodeGenerator";
@@ -104,46 +104,7 @@ export class TSWriter implements ICodeWriter {
 		});
 	}
 
-	private WriteServiceServer(name: string, service: ServiceDefinition) {
-		/*let nameParsed = ParseName(name);
-		let fileDescriptorProtos: any = Object.values(service)[0].requestType.fileDescriptorProtos
-		
-		let serviceDescriptionWriter = new CodeGenerator();
-		serviceDescriptionWriter.AddLine(`const FILE_DESCRIPTOR_PROTOS = ${JSON.stringify(fileDescriptorProtos)}`);
-		
-		let definitionString = JSON.stringify(service, (key, val) => key == "fileDescriptorProtos" ? "#!#!FILE_DESCRIPTOR_PROTOS!#!#" : val)
-			.replaceAll("\"#!#!FILE_DESCRIPTOR_PROTOS!#!#\"", "FILE_DESCRIPTOR_PROTOS");
-			serviceDescriptionWriter.AddLine(`export const DEFINITION = ${definitionString}`)
-
-		this._serviceWriters.push({name: nameParsed.name + ".definition", writer: serviceDescriptionWriter})
-		
-		let writer = new CodeGenerator();
-		
-		const className = nameParsed.name + "Server";
-		let versionNamespace = nameParsed.namespaces[nameParsed.namespaces.length - 1];
-		writer.AddLine(`import {DEFINITION} from "./${nameParsed.name + ".definition"}"`);
-		writer.AddLine(``);
-		
-		writer.AddLine(`export namespace ${versionNamespace} {`);
-		writer.Indent();
-		writer.AddLine(`export interface I${className}Server {`)
-		writer.Indent();
-
-		writer.Unindent(),
-		writer.AddLine("}");
-		writer.Unindent(),
-		writer.AddLine("}");
-
-		this._serviceWriters.push({name: className, writer: writer})*/
-	}
-
-	WriteServer(services: ServiceDefinition[], packageDefinition: PackageDefinition, pbjsDefinition: INamespace): void {
-		//Find fileDescriptorProtos
-		let fileDescriptorProtos = Object
-			.values(packageDefinition)
-			.filter((def) => def.format == 'Protocol Buffer 3 DescriptorProto')
-			[0]
-			.fileDescriptorProtos;
+	WriteServer(protoDefinition: ProtoDefinition, pbjsDefinition: INamespace): void {
 
 		let packageDefintionWriter = new CodeGenerator();
 
@@ -153,7 +114,7 @@ export class TSWriter implements ICodeWriter {
 		let serverWriter = new CodeGenerator();
 
 		let namespacesToImport: Set<string> = new Set();
-		for (let service of services) {
+		for (let service of protoDefinition.GetServices()) {
 			namespacesToImport.add(service.symbol.namespace[0].name);
 		}
 
@@ -163,6 +124,7 @@ export class TSWriter implements ICodeWriter {
 		serverWriter.AddLine(`import * as grpc from '@grpc/grpc-js';`);
 		serverWriter.AddLine(`import {protoJson} from './package_defintion';`);
 		serverWriter.AddLine(`import * as protoLoader from '@grpc/proto-loader';`);
+		serverWriter.AddLine(`import {GrpcResponseError} from 'grpc-ts-gen';`);
 
 		let className = `${this._serverName}Server`;
 
@@ -178,10 +140,34 @@ export class TSWriter implements ICodeWriter {
 		serverWriter.AddLine(`this._packageDefinition = protoLoader.fromJSON(protoJson);`);
 		serverWriter.Unindent();
 		serverWriter.AddLine(`}`);
-		for (let service of services) {
+		for (let service of protoDefinition.GetServices()) {
 			serverWriter.AddLine(`Add${service.symbol.name.name}(service: ${this.GetFullSymbolName(service.symbol)}) {`);
 			serverWriter.Indent();
-			serverWriter.AddLine(`this._grpcServer.addService((this._packageDefinition as any).${this.GetFullSymbolName(service.symbol)}, service as any);`);
+			serverWriter.AddLine(`this._grpcServer.addService((this._packageDefinition as any).${this.GetFullSymbolName(service.symbol)}, {`);
+			serverWriter.Indent();
+			for (let method of service.methods) {
+				serverWriter.AddLine(`${JSON.stringify(method.symbol.name)}: (callObject, callback) => {`);
+				serverWriter.Indent();
+				this.TranslateType("callObject.request", "translatedCallObject", serverWriter, method.inputType, protoDefinition)
+
+				serverWriter.AddLine(`service.${this._namingTransformer.ConvertSymbol(method.symbol)}(translatedCallObject)`);
+				serverWriter.Indent();
+				serverWriter.AddLine(`.then((response) => callback(null, response))`);
+				serverWriter.AddLine(`.catch((err) => {`);
+				serverWriter.Indent();
+				serverWriter.AddLine(`if (err instanceof GrpcResponseError)`)
+				serverWriter.Indent();
+				serverWriter.AddLine(`callback({code: err.grpcErrorCode});`);
+				serverWriter.Unindent();
+				serverWriter.AddLine(`throw err;`)
+				serverWriter.Unindent();
+				serverWriter.AddLine(`})`);
+				serverWriter.Unindent();
+				serverWriter.Unindent();
+				serverWriter.AddLine(`},`)
+			}
+			serverWriter.Unindent();
+			serverWriter.AddLine(`}`);
 			serverWriter.Unindent();
 			serverWriter.AddLine(`}`);
 		}
@@ -190,6 +176,22 @@ export class TSWriter implements ICodeWriter {
 		serverWriter.AddLine("}");
 
 		this._serviceWriters.push({name: className, writer: serverWriter});
+	}
+
+	private TranslateType(from: string, to: string, generator: CodeGenerator, type: GrpcType, protoDefinition: ProtoDefinition): void {
+		if (type instanceof GrpcMessageType) {
+			let message = protoDefinition.FindMessage(type.symbol);
+			generator.AddLine(`let ${to} = {`);
+			generator.Indent();
+			for (let field of message.fields) {
+				generator.AddLine(`${JSON.stringify(this._namingTransformer.ConvertSymbol(field.symbol))}: ${from}[${JSON.stringify(field.symbol.name)}],`);
+			}
+			generator.Unindent();
+			generator.AddLine(`}`);
+		} else {
+			generator.AddLine(`let ${to} = ${from}`);
+
+		}
 	}
 
 	GetResult(): VirtualDirectory {
