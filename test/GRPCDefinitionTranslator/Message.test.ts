@@ -81,4 +81,21 @@ describe("GRPCDefintionTranslator message test", () => {
 			}
 		}
 	});
+
+	it("Should convert message with forward dependencies correctly", async () => {
+		let data = await loadFromPbjsDefinition("messagesamples/ForwardDependency.proto");
+
+		let messages = Array.from(data.GetMessages());
+		assert.equal(messages.length, 2);
+
+		let targetMessage;
+		for (let message of messages) {
+			if (message.symbol.name.name == "AdvancedMessage") {
+				targetMessage = message;
+			}
+		}
+
+		assert.exists(targetMessage, "Exepcted to find AdvancedMessage");
+		assert.deepEqual(targetMessage, ExpectedAdvancedMessage);
+	});
 });

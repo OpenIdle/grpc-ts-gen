@@ -58,10 +58,19 @@ const ExpectedSimpleService = new ServiceDefinition(
 describe("GRPCDefintionTranslator service test", () => {
     it("Simple case should be translated correctly", async () => {
         let data = await loadFromPbjsDefinition("servicesamples/SimpleService.proto");
-		
+        
         let services = Array.from(data.GetServices());
-		assert.equal(services.length, 1);
+        assert.equal(services.length, 1);
 
-		assert.deepEqual(services[0], ExpectedSimpleService);
+        assert.deepEqual(services[0], ExpectedSimpleService);
+    })
+
+    it("Simple case with forward dependencies should be translated correctly", async () => {
+        let data = await loadFromPbjsDefinition("servicesamples/ForwardDependency.proto");
+        
+        let services = Array.from(data.GetServices());
+        assert.equal(services.length, 1);
+
+        assert.deepEqual(services[0], ExpectedSimpleService);
     })
 });
