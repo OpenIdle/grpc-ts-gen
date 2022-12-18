@@ -18,6 +18,7 @@ jobs:
       with:
         node-version: 18
     - run: npm install
+    - name: "build"
+      run: npx tsc
     - name: "tests"
       run: npm test
-
