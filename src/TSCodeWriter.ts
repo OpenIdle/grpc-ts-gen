@@ -3,14 +3,14 @@ import CodeGenerator from "./CodeGenerator";
 import { EnumDefinition, GrpcEnumType, GrpcMessageType, GrpcOneofType, GrpcSymbol, GrpcType, MessageDefinition, NamespacedSymbol, ProtoDefinition, ServiceDefinition, SymbolType } from "./GRPCDefinitionTranslator";
 import { ICodeWriter } from "./ICodeWriter";
 import { INamingTransformer } from "./INamingTransformer";
-import { TSCodeGenerator } from "./TSCodeGenerator";
+import { TSNamespaceCodeGenerator } from "./TSNamespaceCodeGenerator";
 import { VirtualDirectory } from "./VirtualDirectory";
 
 const STRING_TYPE_NAME = "string";
 const NUMBER_TYPE_NAME = "number";
 
-export class TSWriter implements ICodeWriter {
-	_definitionWriter: TSCodeGenerator;
+export class TSCodeWriter implements ICodeWriter {
+	_definitionWriter: TSNamespaceCodeGenerator;
 	_serviceWriters: {name: string, writer: CodeGenerator}[];
 	_namingTransformer: INamingTransformer;
 	_requestBodyAsParameters: boolean;
@@ -24,7 +24,7 @@ export class TSWriter implements ICodeWriter {
 		this._requestBodyAsParameters = requestBodyAsParameters;
 		this._serviceWriters = [];
 		this._serverName = serverName;
-		this._definitionWriter = new TSCodeGenerator(new CodeGenerator(), this._namingTransformer);
+		this._definitionWriter = new TSNamespaceCodeGenerator(new CodeGenerator(), this._namingTransformer, "definitions.ts");
 	}
 
 	private GetFullSymbolName(symbol: NamespacedSymbol): string {
@@ -58,7 +58,7 @@ export class TSWriter implements ICodeWriter {
 	}
 
 	WriteMessageInterface(message: MessageDefinition) {
-		this._definitionWriter.Namespace(message.symbol.namespace, () => {
+		this._definitionWriter.Group(message.symbol.namespace, () => {
 			this._definitionWriter.DefineInterface(message.symbol.name, () => {
 				for (const field of message.fields) {
 					this._definitionWriter.AddLine(`readonly ${field.symbol.name}: ${this.GetTSTypeName(field.type)};`);
@@ -68,7 +68,7 @@ export class TSWriter implements ICodeWriter {
 	}
 	
 	WriteEnum(_enum: EnumDefinition) {
-		this._definitionWriter.Namespace(_enum.symbol.namespace, () => {
+		this._definitionWriter.Group(_enum.symbol.namespace, () => {
 			this._definitionWriter.DefineEnum(_enum.symbol.name, () => {
 				for (const value of _enum.values) {
 					this._definitionWriter.AddLine(`${this._namingTransformer.ConvertSymbol(value.symbol)} = ${value.value},`);
@@ -78,7 +78,7 @@ export class TSWriter implements ICodeWriter {
 	}
 
 	WriteServiceInterface(service: ServiceDefinition) {
-		this._definitionWriter.Namespace(service.symbol.namespace, () => {
+		this._definitionWriter.Group(service.symbol.namespace, () => {
 			this._definitionWriter.DefineInterface(service.symbol.name, () => {
 				for (const method of service.methods) {
 					let parameters: string;
@@ -184,11 +184,11 @@ export class TSWriter implements ICodeWriter {
 	}
 
 	GetResult(): VirtualDirectory {
-		return {
-			entries: new Map([
-				["definitions.ts", this._definitionWriter.Generate()],
-				...this._serviceWriters.map<[string, string]>(serviceWriter => [serviceWriter.name + ".ts", serviceWriter.writer.Generate()])
-			]),
-		};
+		const vd = new VirtualDirectory();
+		this._definitionWriter.Generate(vd);
+		for (const serviceWriter of this._serviceWriters) {
+			vd.AddEntry(serviceWriter.name, serviceWriter.writer.Generate());
+		}
+		return vd;
 	}
 }

@@ -4,8 +4,8 @@ import {readdir, readFile, stat } from "fs/promises";
 import { extname, join, relative } from "path";
 import { ProtoDefinition } from "./GRPCDefinitionTranslator";
 import { ICodeWriter } from "./ICodeWriter";
-import { VirtualDirectory, WriteVirtualDirectory } from "./VirtualDirectory";
-import { TSWriter } from "./TSCodeWriter";
+import { VirtualDirectory } from "./VirtualDirectory";
+import { TSCodeWriter } from "./TSCodeWriter";
 import protobuf from "protobufjs";
 import { DefaultTransformer } from "./DefaultTransformer";
 
@@ -147,14 +147,14 @@ async function main(args: string[]): Promise<number> {
 	};
 
 	const creator = new TypeDefinitionCreator(
-		new TSWriter(
+		new TSCodeWriter(
 			new DefaultTransformer(), 
 			options.requestBodyAsParameters,
 			options.serverName
 		)
 	);
 	const vd = await creator.Create(options.protoBasePath);
-	await WriteVirtualDirectory(vd, options.outPath);
+	await vd.WriteVirtualDirectory(options.outPath);
 	return 0;
 }
 
