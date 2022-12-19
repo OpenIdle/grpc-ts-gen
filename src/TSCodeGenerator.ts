@@ -4,20 +4,24 @@ import { IGroupingCodeGenerator } from "./IGroupingCodeGenerator";
 import { INamingTransformer } from "./INamingTransformer";
 import { VirtualDirectory } from "./VirtualDirectory";
 
+export enum GroupingMode {
+	Namespace,
+	Module,
+}
 
-export class TSNamespaceCodeGenerator implements IGroupingCodeGenerator {
+export class TSCodeGenerator implements IGroupingCodeGenerator {
 	private _namespaceRelativeLines: Map<string, {data: ({line: string} | {indent: true} | {unindent: true})[]}>;
 	private _currentNamespaceStack: Array<string>;
-	private _codeGenerator: CodeGenerator;
 	private _namingTransformer: INamingTransformer;
-	private _filename: string;
-	constructor(codeGenerator: CodeGenerator, namingTransformer: INamingTransformer, filename: string) {
+	private _defaultFileName: string;
+	private _groupingMode: GroupingMode;
+	constructor(namingTransformer: INamingTransformer, defaultFileName: string, groupingMode: GroupingMode) {
 		this._currentNamespaceStack = [];
 		this._namespaceRelativeLines = new Map();
 		this._namespaceRelativeLines.set("", {data: []});
-		this._codeGenerator = codeGenerator;
 		this._namingTransformer = namingTransformer;
-		this._filename = filename;
+		this._defaultFileName = defaultFileName;
+		this._groupingMode = groupingMode;
 	}
 
 	IndentBlock(cb: () => void): void {
@@ -72,6 +76,15 @@ export class TSNamespaceCodeGenerator implements IGroupingCodeGenerator {
 	}
 
 	Generate(vd: VirtualDirectory): void {
+		if (this._groupingMode == GroupingMode.Namespace) {
+			this.GenerateNamespaceGrouping(vd);
+		} else {
+			this.GenerateModuleGrouping(vd);
+		}
+	}
+
+	private GenerateNamespaceGrouping(vd: VirtualDirectory): void {
+		const codeGenerator = new CodeGenerator();
 		const entries = Array.from(this._namespaceRelativeLines.entries());
 		entries.sort((a,b) => a[0].localeCompare(b[0]));
 		for (const [namespaceIdentifier, linesData] of entries) {
@@ -84,26 +97,68 @@ export class TSNamespaceCodeGenerator implements IGroupingCodeGenerator {
 				}
 
 				for (const _namespace of namespaces) {
-					this._codeGenerator.AddLine(`export namespace ${_namespace} {`);
-					this._codeGenerator.Indent();
+					codeGenerator.AddLine(`export namespace ${_namespace} {`);
+					codeGenerator.Indent();
 				}
 
-				for (const lineData of linesData.data) {
-					if ("indent" in lineData) {
-						this._codeGenerator.Indent();
-					} else if ("unindent" in lineData) {
-						this._codeGenerator.Unindent();
-					} else {
-						this._codeGenerator.AddLine(lineData.line);
-					}
-				}
+				this.GenerateCodeFromLineData(codeGenerator, linesData.data)
 
 				for (let i = 0; i < namespaces.length; i++) {
-					this._codeGenerator.Unindent();
-					this._codeGenerator.AddLine("}");
+					codeGenerator.Unindent();
+					codeGenerator.AddLine("}");
 				}
 			}
 		}
-		vd.AddEntry(this._filename, this._codeGenerator.Generate());
+		vd.AddEntry(this._defaultFileName, codeGenerator.Generate());
+	}
+
+	private GenerateModuleGrouping(vd: VirtualDirectory): void {
+		const indexGenerator = new CodeGenerator();
+		for (const [namespaceIdentifier, linesData] of this._namespaceRelativeLines) {
+			if (linesData.data.length > 0) {
+				let groupingPath: string[];
+				if (namespaceIdentifier == "") {
+					groupingPath = [];
+				} else {
+					groupingPath = namespaceIdentifier.split(".");
+					groupingPath[groupingPath.length - 1] += ".ts";
+				}
+				let targetGenerator: CodeGenerator;
+				if (groupingPath.length == 0) {
+					targetGenerator = indexGenerator;
+				} else {
+					targetGenerator = new CodeGenerator();
+				}
+
+				this.GenerateCodeFromLineData(targetGenerator, linesData.data);
+
+				if (targetGenerator != indexGenerator) {
+					vd.AddDeepEntry(groupingPath, targetGenerator.Generate());
+				}
+			}
+		}
+		vd.AddEntry(this._defaultFileName, indexGenerator.Generate());
+	}
+
+	private GenerateCodeFromLineData(generator: CodeGenerator, linesData: Array<{
+		line: string;
+	} | {
+		indent: true;
+	} | {
+		unindent: true;
+	}>) {
+		for (const lineData of linesData) {
+			if ("indent" in lineData) {
+				generator.Indent();
+			} else if ("unindent" in lineData) {
+				generator.Unindent();
+			} else {
+				generator.AddLine(lineData.line);
+			}
+		}
+	}
+
+	public GetGroupingMode(): GroupingMode {
+		return this._groupingMode;
 	}
 }

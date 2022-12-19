@@ -3,14 +3,14 @@ import CodeGenerator from "./CodeGenerator";
 import { EnumDefinition, GrpcEnumType, GrpcMessageType, GrpcOneofType, GrpcSymbol, GrpcType, MessageDefinition, NamespacedSymbol, ProtoDefinition, ServiceDefinition, SymbolType } from "./GRPCDefinitionTranslator";
 import { ICodeWriter } from "./ICodeWriter";
 import { INamingTransformer } from "./INamingTransformer";
-import { TSNamespaceCodeGenerator } from "./TSNamespaceCodeGenerator";
+import { GroupingMode, TSCodeGenerator } from "./TSCodeGenerator";
 import { VirtualDirectory } from "./VirtualDirectory";
 
 const STRING_TYPE_NAME = "string";
 const NUMBER_TYPE_NAME = "number";
 
 export class TSCodeWriter implements ICodeWriter {
-	_definitionWriter: TSNamespaceCodeGenerator;
+	_definitionWriter: TSCodeGenerator;
 	_serviceWriters: {name: string, writer: CodeGenerator}[];
 	_namingTransformer: INamingTransformer;
 	_requestBodyAsParameters: boolean;
@@ -24,7 +24,7 @@ export class TSCodeWriter implements ICodeWriter {
 		this._requestBodyAsParameters = requestBodyAsParameters;
 		this._serviceWriters = [];
 		this._serverName = serverName;
-		this._definitionWriter = new TSNamespaceCodeGenerator(new CodeGenerator(), this._namingTransformer, "definitions.ts");
+		this._definitionWriter = new TSCodeGenerator(this._namingTransformer, "definitions.ts", GroupingMode.Namespace);
 	}
 
 	private GetFullSymbolName(symbol: NamespacedSymbol): string {
