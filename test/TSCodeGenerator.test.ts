@@ -166,13 +166,22 @@ describe("TSCodeWriter test", () => {
 			codeGenerator.DefineEnum(new GrpcSymbol("bar", SymbolType.Enum), () => {});
 			// eslint-disable-next-line @typescript-eslint/no-empty-function
 			codeGenerator.DefineInterface(new GrpcSymbol("baz", SymbolType.Message), () => {});
+			codeGenerator.AddImport(NamespacedSymbol.FromString("foo.bar.baz", SymbolType.Enum), "IMPORT_foo_bar_baz");
+			codeGenerator.AddImport(NamespacedSymbol.FromString("foo.bar.qux", SymbolType.Message), "IMPORT_foo_bar_qux");
 	
 			const vd = new VirtualDirectory();
 			codeGenerator.Generate(vd);
 			const flatEntries = vd.GetFlatEntries();
 
 			assert.equal(flatEntries.get("quxNamespace/bazNamespace.ts"), "");
-			assert.equal(flatEntries.get("index.ts"), "export enum barEnum {\n}\nexport interface bazMessage {\n}");
+			assert.equal(flatEntries.get("index.ts"), 
+				"import {bazEnum as IMPORT_foo_bar_baz, quxMessage as IMPORT_foo_bar_qux} from \"./fooNamespace/barNamespace\";\n" +
+				"export enum barEnum {\n" +
+				"}\n" + 
+				"export interface bazMessage {\n" + 
+				"}",
+				"index.ts should have correct contents"
+			);
 			
 			assert.deepEqual(new Set(flatEntries.keys()), new Set(["index.ts", "quxNamespace/bazNamespace.ts"]), "The correct file structure should be created")
 		});
