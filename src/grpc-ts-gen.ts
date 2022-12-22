@@ -61,6 +61,13 @@ class TypeDefinitionCreator {
 	}
 }
 
+interface FileConfig {
+	protoBasePath: string;
+	outPath: string;
+	serverName: string;
+	requestBodyAsObject: boolean;
+}
+
 interface ProgramOptions {
 	protoBasePath: string;
 	outPath: string;
@@ -73,7 +80,7 @@ async function main(args: string[]): Promise<number> {
 
 	try {
 		const configFile = await readFile("grpc-ts-gen.config.json");
-		const fileConfig = JSON.parse(configFile.toString());
+		const fileConfig = JSON.parse(configFile.toString()) as Partial<FileConfig>;
 		if (typeof(fileConfig) != "object") {
 			throw new Error("grpc-ts-gen.config.json is invalid");
 		}

@@ -1,7 +1,7 @@
 import { assert } from "chai";
 import { GrpcSymbol, NamespacedSymbol, SymbolType } from "../src/GRPCDefinitionTranslator";
 import { INamingTransformer } from "../src/INamingTransformer";
-import { GroupingMode, TSCodeGenerator } from "../src/TSCodeGenerator";
+import { TSCodeGenerator } from "../src/TSCodeGenerator";
 import { VirtualDirectory } from "../src/VirtualDirectory";
 
 class MockNamingTransformer implements INamingTransformer {
@@ -28,8 +28,8 @@ describe("TSCodeWriter test", () => {
 			const vd = new VirtualDirectory();
 			codeGenerator.Generate(vd);
 			const entries = Array.from(vd.GetEntries());
-			assert.equal(entries.length, 1, `There should be one entry`);
-			assert.deepEqual(entries[0], ["index.ts", ""], `The entry should be called index.ts and be empty`);
+			assert.equal(entries.length, 1, "There should be one entry");
+			assert.deepEqual(entries[0], ["index.ts", ""], "The entry should be called index.ts and be empty");
 		});
 		it("Should add line correctly", () => {
 			const codeGenerator = new TSCodeGenerator(new MockNamingTransformer());
@@ -38,7 +38,7 @@ describe("TSCodeWriter test", () => {
 			const vd = new VirtualDirectory();
 			codeGenerator.Generate(vd);
 			const entries = Array.from(vd.GetEntries());
-			assert.deepEqual(entries[0], ["index.ts", "Some statement\nSome other statement"], `The entry should be called index.ts with correct content`);
+			assert.deepEqual(entries[0], ["index.ts", "Some statement\nSome other statement"], "The entry should be called index.ts with correct content");
 		});
 		it("Should indent correctly", () => {
 			const codeGenerator = new TSCodeGenerator(new MockNamingTransformer());
@@ -51,7 +51,7 @@ describe("TSCodeWriter test", () => {
 			const vd = new VirtualDirectory();
 			codeGenerator.Generate(vd);
 			const entries = Array.from(vd.GetEntries());
-			assert.deepEqual(entries[0], ["index.ts", "Some statement\n\tSome other statement\nSome third statement"], `The entry should be called index.ts with correct content`);
+			assert.deepEqual(entries[0], ["index.ts", "Some statement\n\tSome other statement\nSome third statement"], "The entry should be called index.ts with correct content");
 		});
 	
 		it("Should indent using block correctly", () => {
@@ -65,7 +65,7 @@ describe("TSCodeWriter test", () => {
 			const vd = new VirtualDirectory();
 			codeGenerator.Generate(vd);
 			const entries = Array.from(vd.GetEntries());
-			assert.deepEqual(entries[0], ["index.ts", "Some statement\n\tSome other statement\nSome third statement"], `The entry should be called index.ts with correct content`);
+			assert.deepEqual(entries[0], ["index.ts", "Some statement\n\tSome other statement\nSome third statement"], "The entry should be called index.ts with correct content");
 		});
 	
 		it("Should define interface correctly", () => {
@@ -79,7 +79,7 @@ describe("TSCodeWriter test", () => {
 			const vd = new VirtualDirectory();
 			codeGenerator.Generate(vd);
 			const entries = Array.from(vd.GetEntries());
-			assert.deepEqual(entries[0], ["index.ts", "Some statement\nexport interface SomeInterface {\n\tsomevalue: int\n}\nSome third statement"], `The entry should be called index.ts with correct content`);
+			assert.deepEqual(entries[0], ["index.ts", "Some statement\nexport interface SomeInterface {\n\tsomevalue: int\n}\nSome third statement"], "The entry should be called index.ts with correct content");
 		});
 	
 		it("Should define enum correctly", () => {
@@ -93,7 +93,7 @@ describe("TSCodeWriter test", () => {
 			const vd = new VirtualDirectory();
 			codeGenerator.Generate(vd);
 			const entries = Array.from(vd.GetEntries());
-			assert.deepEqual(entries[0], ["index.ts", "Some statement\nexport enum SomeEnum {\n\taa = 2\n}\nSome third statement"], `The entry should be called index.ts with correct content`);
+			assert.deepEqual(entries[0], ["index.ts", "Some statement\nexport enum SomeEnum {\n\taa = 2\n}\nSome third statement"], "The entry should be called index.ts with correct content");
 		});
 	});
 	describe("Module generation", () => {
@@ -120,7 +120,7 @@ describe("TSCodeWriter test", () => {
 			assert.deepEqual(flatEntries.get("foo/bar.ts"), "a");
 			assert.deepEqual(flatEntries.get("baz/bar.ts"), "b");
 			assert.deepEqual(flatEntries.get("foo/baz.ts"), "c");
-			assert.deepEqual(new Set(flatEntries.keys()), new Set(["foo/bar.ts", "baz/bar.ts", "foo/baz.ts"]))
+			assert.deepEqual(new Set(flatEntries.keys()), new Set(["foo/bar.ts", "baz/bar.ts", "foo/baz.ts"]));
 		});
 		it("Nested groups should work", () => {
 			const codeGenerator = new TSCodeGenerator(new MockNamingTransformer());
@@ -139,8 +139,8 @@ describe("TSCodeWriter test", () => {
 			assert.deepEqual(flatEntries.get("baz.ts"), "b", "Should contain baz.ts module containing 'b'");
 			assert.deepEqual(flatEntries.get("baz/bar.ts"), "a", "Should contain baz/bar.ts module containing 'a'");
 
-			assert.deepEqual(new Set(flatEntries.keys()), new Set(["baz.ts", "baz/bar.ts"]), "Should not have unexpected files")
-		})
+			assert.deepEqual(new Set(flatEntries.keys()), new Set(["baz.ts", "baz/bar.ts"]), "Should not have unexpected files");
+		});
 		it("Should transform namespace names correctly", () => {
 			const namingTranformer = new MockNamingTransformer((symbol) => {
 				switch (symbol.type) {
@@ -168,6 +168,7 @@ describe("TSCodeWriter test", () => {
 			codeGenerator.DefineInterface(new GrpcSymbol("baz", SymbolType.Message), () => {});
 			codeGenerator.AddImport(NamespacedSymbol.FromString("foo.bar.baz", SymbolType.Enum), "IMPORT_foo_bar_baz");
 			codeGenerator.AddImport(NamespacedSymbol.FromString("foo.bar.qux", SymbolType.Message), "IMPORT_foo_bar_qux");
+			codeGenerator.AddImport(NamespacedSymbol.FromString("foo.bar", SymbolType.Message));
 	
 			const vd = new VirtualDirectory();
 			codeGenerator.Generate(vd);
@@ -175,6 +176,7 @@ describe("TSCodeWriter test", () => {
 
 			assert.equal(flatEntries.get("quxNamespace/bazNamespace.ts"), "");
 			assert.equal(flatEntries.get("index.ts"), 
+				"import {barMessage} from \"./fooNamespace\";\n" +
 				"import {bazEnum as IMPORT_foo_bar_baz, quxMessage as IMPORT_foo_bar_qux} from \"./fooNamespace/barNamespace\";\n" +
 				"export enum barEnum {\n" +
 				"}\n" + 
@@ -183,15 +185,19 @@ describe("TSCodeWriter test", () => {
 				"index.ts should have correct contents"
 			);
 			
-			assert.deepEqual(new Set(flatEntries.keys()), new Set(["index.ts", "quxNamespace/bazNamespace.ts"]), "The correct file structure should be created")
+			assert.deepEqual(new Set(flatEntries.keys()), new Set(["index.ts", "quxNamespace/bazNamespace.ts"]), "The correct file structure should be created");
 		});
 		it("Should import correctly", () => {
 			const codeGenerator = new TSCodeGenerator(new MockNamingTransformer());
+			// eslint-disable-next-line @typescript-eslint/no-empty-function
 			codeGenerator.DefineInterface(new GrpcSymbol("qux", SymbolType.Message), () => {});
 			codeGenerator.AddImport(NamespacedSymbol.FromString("foo.bar.baz", SymbolType.Message), "IMPORT_foo_bar_baz");
 			codeGenerator.Group([new GrpcSymbol("foo", SymbolType.Namespace), new GrpcSymbol("bar", SymbolType.Namespace)], () => {
 				codeGenerator.AddImport(NamespacedSymbol.FromString("qux", SymbolType.Message), "IMPORT_qux");
+				codeGenerator.AddImport(NamespacedSymbol.FromString("quux", SymbolType.Message));
 				codeGenerator.AddImport(NamespacedSymbol.FromString("foo.bar", SymbolType.Message), "IMPORT_foo_bar");
+				codeGenerator.AddImport(NamespacedSymbol.FromString("foo.baz", SymbolType.Message), "IMPORT_foo_baz");
+				codeGenerator.AddImport(NamespacedSymbol.FromString("foo.baz", SymbolType.Message), "IMPORT_foo_baz");
 				codeGenerator.AddImport(NamespacedSymbol.FromString("foo.baz", SymbolType.Message), "IMPORT_foo_baz");
 				codeGenerator.AddLine("");
 			});
@@ -212,7 +218,7 @@ describe("TSCodeWriter test", () => {
 
 			assert.equal(
 				flatEntries.get("foo/bar.ts"),
-				"import {qux as IMPORT_qux} from \"./..\";\n" +
+				"import {quux, qux as IMPORT_qux} from \"./..\";\n" +
 				"import {bar as IMPORT_foo_bar, baz as IMPORT_foo_baz} from \"./../foo\";\n",
 				"Expected foo/bar.ts to have correct imports"
 			);
@@ -223,8 +229,7 @@ describe("TSCodeWriter test", () => {
 				"Expected foo.ts to have correct imports"
 			);
 			
-			assert.deepEqual(new Set(flatEntries.keys()), new Set(["index.ts", "foo/bar.ts", "foo.ts"]), "The correct file structure should be created")
-		
-		})
+			assert.deepEqual(new Set(flatEntries.keys()), new Set(["index.ts", "foo/bar.ts", "foo.ts"]), "The correct file structure should be created");
+		});
 	});
 });

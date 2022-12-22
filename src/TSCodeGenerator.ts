@@ -1,21 +1,37 @@
 import path from "path";
 import CodeGenerator from "./CodeGenerator";
 import { GrpcSymbol, NamespacedSymbol, SymbolType } from "./GRPCDefinitionTranslator";
+import { ICodeGenerator } from "./ICodeGenerator";
 import { IModuleCodeGenerator } from "./IModuleCodeGenerator";
 import { INamingTransformer } from "./INamingTransformer";
 import { VirtualDirectory } from "./VirtualDirectory";
 
-export enum GroupingMode {
-	Namespace,
-	Module,
-}
-
-interface Importation {
+class Importation {
 	modulePath: GrpcSymbol[];
-	imports:  {
+	private imports: Map<string, {
 		symbol: GrpcSymbol;
-		importAs: string;
-	}[]
+		importAs?: string;
+	}>;
+
+	constructor(modulePath: GrpcSymbol[]) {
+		this.modulePath = modulePath;
+		this.imports = new Map();
+	}
+
+	AddImport(symbol: GrpcSymbol, importAs?: string): void {
+		const existingImport = this.imports.get(symbol.name);
+		if (existingImport != null) {
+			if (existingImport.importAs != importAs) {
+				throw new Error("Tried to import the same symbol with two different aliases");
+			}
+			return;
+		}
+		this.imports.set(symbol.name, {symbol, importAs});
+	}
+
+	GetImports(): Iterable<{ symbol: GrpcSymbol; importAs?: string;}> {
+		return this.imports.values();
+	} 
 }
 
 type CodeGeneratorInstructions = {line: string} | {indent: true} | {unindent: true};
@@ -31,17 +47,14 @@ class ModuleDescription {
 		this.symbolPath = symbolPath;
 	}
 
-	AddImport(symbol: NamespacedSymbol, importAs: string) {
-		let moduleIdentifier = symbol.namespace.map(name => name.name).join(".");
+	AddImport(symbol: NamespacedSymbol, importAs?: string): void {
+		const moduleIdentifier = symbol.namespace.map(name => name.name).join(".");
 		let importation = this.importations.get(moduleIdentifier);
 		if (importation == null) {
-			importation = {
-				modulePath: symbol.namespace,
-				imports: []
-			};
+			importation = new Importation(symbol.namespace);
 			this.importations.set(moduleIdentifier, importation);
 		}
-		importation.imports.push({symbol: symbol.name, importAs});
+		importation.AddImport(symbol.name, importAs);
 	}
 
 	GetImportations(): Iterable<Importation> {
@@ -67,7 +80,7 @@ export class TSCodeGenerator implements IModuleCodeGenerator {
 	}
 
 	Group(groupNames: GrpcSymbol[], cb: () => void): void {
-		let oldNamespaceStack = this._currentNamespaceStack.slice()
+		const oldNamespaceStack = this._currentNamespaceStack.slice();
 		this._currentNamespaceStack = this._currentNamespaceStack.concat(groupNames);
 		const namespaceIdentifier = this._currentNamespaceStack.map(x => x.name).join(".");
 		if (!this._modules.has(namespaceIdentifier)) {
@@ -84,34 +97,34 @@ export class TSCodeGenerator implements IModuleCodeGenerator {
 		if (currentModule == null) {
 			throw new Error("Tried to add line data from non existant namespace");
 		}
-		return currentModule
+		return currentModule;
 	}
 
-	private AddLineData(data: CodeGeneratorInstructions) {
-		let module = this.GetCurrentModule();
+	private AddLineData(data: CodeGeneratorInstructions): void {
+		const module = this.GetCurrentModule();
 
 		module.instructions.push(data);
 	}
 
-	AddLine(line: string) {
+	AddLine(line: string): void {
 		this.AddLineData({line});
 	}
 
-	Indent() {
+	Indent(): void {
 		this.AddLineData({indent: true});
 	}
 
-	Unindent() {
+	Unindent(): void {
 		this.AddLineData({unindent: true});
 	}
 
-	DefineInterface(name: GrpcSymbol, cb: () => void) {
+	DefineInterface(name: GrpcSymbol, cb: () => void): void {
 		this.AddLine(`export interface ${this._namingTransformer.ConvertSymbol(name)} {`);
 		this.IndentBlock(cb);
 		this.AddLine("}");
 	}
 
-	DefineEnum(name: GrpcSymbol, cb: () => void) {
+	DefineEnum(name: GrpcSymbol, cb: () => void): void {
 		this.AddLine(`export enum ${this._namingTransformer.ConvertSymbol(name)} {`);
 		this.IndentBlock(cb);
 		this.AddLine("}");
@@ -121,50 +134,58 @@ export class TSCodeGenerator implements IModuleCodeGenerator {
 		this.GenerateModuleGrouping(vd);
 	}
 
-	AddImport(symbol: NamespacedSymbol, importAs: string): void {
-		let module = this.GetCurrentModule();
+	AddImport(symbol: NamespacedSymbol, importAs?: string): void {
+		const module = this.GetCurrentModule();
 		module.AddImport(symbol, importAs);
 	}
 
 	private GenerateModuleGrouping(vd: VirtualDirectory): void {
-		const indexGenerator = new CodeGenerator();
 		for (const module of this._modules.values()) {
 			if (module.instructions.length > 0) {
-				let generator: CodeGenerator = new CodeGenerator();
+				const groupingPath = module.symbolPath
+					.map(x => this._namingTransformer.ConvertSymbol(x));
+				
+				groupingPath[groupingPath.length - 1] += ".ts";
+				
+				const generator: CodeGenerator = new CodeGenerator(groupingPath);
+
 				this.GenerateImports(generator, Array.from(module.GetImportations()), module);
 				
 				this.GenerateCodeFromLineData(generator, module.instructions);
-
-				if (generator != indexGenerator) {
-					const groupingPath = module.symbolPath
-						.map(x => this._namingTransformer.ConvertSymbol(x));
-					groupingPath[groupingPath.length - 1] += ".ts";
-					vd.AddDeepEntry(groupingPath, generator.Generate());
-				}
+				
+				generator.Generate(vd);
+				
 			}
 		}
 	}
 
-	private GenerateImports(generator: CodeGenerator, imports: Importation[], module: ModuleDescription): void {
-		let transformedImporations = 
-			imports.map(importation => ({
-				modulePath: this.ResolveModulePath(module, importation.modulePath),
-				imported: importation.imports
-					.map(_import => ({
-						fromName: this._namingTransformer.ConvertSymbol(_import.symbol),
-						importAs: _import.importAs
-					}))
-					.sort((a, b) => a.fromName.localeCompare(b.fromName))
-			}))
-			.sort((a, b) => a.modulePath.localeCompare(b.modulePath));
+	private GenerateImports(generator: ICodeGenerator, imports: Importation[], module: ModuleDescription): void {
+		const transformedImporations = 
+			imports
+				.map(importation => ({
+					modulePath: this.ResolveModulePath(module, importation.modulePath),
+					imported: Array.from(importation.GetImports())
+						.map(_import => ({
+							fromName: this._namingTransformer.ConvertSymbol(_import.symbol),
+							importAs: _import.importAs
+						}))
+						.sort((a, b) => a.fromName.localeCompare(b.fromName))
+				}))
+				.sort((a, b) => a.modulePath.localeCompare(b.modulePath));
+		
 		for (const transformedImportation of transformedImporations) {
-			generator.AddLine(`import {${transformedImportation.imported.map(x => `${x.fromName} as ${x.importAs}`).join(", ")}} from ${JSON.stringify(transformedImportation.modulePath)};`);
+			generator.AddLine(`import {${transformedImportation.imported.map(x => {
+				if (x.importAs != null) {
+					return `${x.fromName} as ${x.importAs}`;
+				}
+				return `${x.fromName}`;
+			}).join(", ")}} from ${JSON.stringify(transformedImportation.modulePath)};`);
 		}
 	}
 
 	private ResolveModulePath(currentModule: ModuleDescription, targetModulePath: GrpcSymbol[]): string {
 		let currentPath = path.dirname(currentModule.symbolPath.map((symbol) => this._namingTransformer.ConvertSymbol(symbol)).join("/"));
-		let targetPath = targetModulePath.map((symbol) => this._namingTransformer.ConvertSymbol(symbol)).join("/");
+		const targetPath = targetModulePath.map((symbol) => this._namingTransformer.ConvertSymbol(symbol)).join("/");
 		if (currentPath == "index") {
 			currentPath = "";
 		}
@@ -172,12 +193,12 @@ export class TSCodeGenerator implements IModuleCodeGenerator {
 			return "./../" + targetPath;
 		}
 
-		let resolved = path.relative(currentPath, targetPath);
+		const resolved = path.relative(currentPath, targetPath);
 
 		return "./" + resolved;
 	}
 
-	private GenerateCodeFromLineData(generator: CodeGenerator, linesData: CodeGeneratorInstructions[]): void {
+	private GenerateCodeFromLineData(generator: ICodeGenerator, linesData: CodeGeneratorInstructions[]): void {
 		for (const lineData of linesData) {
 			if ("indent" in lineData) {
 				generator.Indent();

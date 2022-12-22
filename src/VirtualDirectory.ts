@@ -7,14 +7,14 @@ export class VirtualDirectory {
 		this.entries = new Map();
 	}
 
-	AddEntry(name: string, entry: string | VirtualDirectory) {
+	AddEntry(name: string, entry: string | VirtualDirectory): void {
 		if (this.entries.has(name)) {
 			throw new Error("Tried to add already existing entry");
 		}
 		this.entries.set(name, entry);
 	}
 	
-	AddDeepEntry(pathComponents: string[], entry: string | VirtualDirectory) {
+	AddDeepEntry(pathComponents: string[], entry: string | VirtualDirectory): void {
 		if (pathComponents.length == 0) {
 			throw new Error("Needs atleast one path component");
 		}
@@ -38,22 +38,24 @@ export class VirtualDirectory {
 		return this.entries.entries();
 	}
 
-	async WriteVirtualDirectory(outDirectory: string) {
+	async WriteVirtualDirectory(outDirectory: string): Promise<void> {
 		try {
 			await mkdir(outDirectory);
 		}
 		catch (e) {
-			if (!(e != null && typeof(e) == "object" && ("errno" in e) && (e as {"errno": number}).errno == -4075)) {
+			if (!(e != null && typeof(e) == "object" && ("errno" in e) && (e as {"errno": number}).errno == -17)) {
 				throw e;
 			}
 		}
+		const promises: Array<Promise<void>> = [];
 		for (const [filename, entry] of this.entries) {
 			if (typeof(entry) == "string") {
-				await writeFile(join(outDirectory, filename), entry);
+				promises.push(writeFile(join(outDirectory, filename), entry));
 			} else {
-				entry.WriteVirtualDirectory(join(outDirectory, filename));
+				promises.push(entry.WriteVirtualDirectory(join(outDirectory, filename)));
 			}
 		}
+		await Promise.all(promises);
 	}
 
 	GetFlatEntries(): Map<string, string> {

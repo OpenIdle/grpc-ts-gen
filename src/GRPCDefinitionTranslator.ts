@@ -204,7 +204,7 @@ export class ProtoDefinition {
 		return rv;
 	}
 
-	private ResolveForwardDependencies() {
+	private ResolveForwardDependencies(): void {
 		for (const message of this.messages.values()) {
 			for (const field of message.fields) {
 				if (field.type instanceof UnresolvedForwardDependencyType) {
@@ -233,7 +233,7 @@ export class ProtoDefinition {
 		}
 	}
 
-	private ResolveForwardDependencyType(type: UnresolvedForwardDependencyType) {
+	private ResolveForwardDependencyType(type: UnresolvedForwardDependencyType): GrpcType {
 		const resolvedType = this.ResolveGrpcType(type.namespaces, type.accessString);
 		if (resolvedType instanceof UnresolvedForwardDependencyType) {
 			throw new Error(`Cannot resolve type "${resolvedType.accessString}" from namespace "${ProtoDefinition.NamespacesToString(resolvedType.namespaces)}"`);
@@ -257,7 +257,7 @@ export class ProtoDefinition {
 		}
 	}
 
-	private CreateEnumDefinition(namespaces: GrpcSymbol[], name: string, _enum: IEnum) {
+	private CreateEnumDefinition(namespaces: GrpcSymbol[], name: string, _enum: IEnum): void {
 		const enumDefinition = new EnumDefinition(
 			new NamespacedSymbol(namespaces, new GrpcSymbol(name, SymbolType.Enum)),
 			[]
@@ -270,7 +270,7 @@ export class ProtoDefinition {
 		this.enums.set(enumDefinition.symbol.Assemble(), enumDefinition);
 	}
 
-	private CreateServiceDefinition(namespaces: GrpcSymbol[], name: string, service: IService) {
+	private CreateServiceDefinition(namespaces: GrpcSymbol[], name: string, service: IService): void {
 		const serviceDefinition = new ServiceDefinition(new NamespacedSymbol(namespaces, new GrpcSymbol(name, SymbolType.Service)), []);
 		for (const [methodName, method] of Object.entries(service.methods)) {
 			serviceDefinition.methods.push(
@@ -285,7 +285,7 @@ export class ProtoDefinition {
 
 	}
 
-	private CreateMessageDefinition(namespaces: GrpcSymbol[], name: string, type: IType) {
+	private CreateMessageDefinition(namespaces: GrpcSymbol[], name: string, type: IType): void {
 		const messageDefinition = new MessageDefinition(
 			new NamespacedSymbol(namespaces, new GrpcSymbol(name, SymbolType.Message)),
 			[]
