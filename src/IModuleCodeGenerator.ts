@@ -1,8 +1,8 @@
-import { GrpcSymbol } from "./GRPCDefinitionTranslator";
+import { GrpcSymbol, NamespacedSymbol } from "./GRPCDefinitionTranslator";
 import { VirtualDirectory } from "./VirtualDirectory";
 
 
-export interface IGroupingCodeGenerator {
+export interface IModuleCodeGenerator {
 	AddLine(line: string): void;
 	Indent(): void;
 	Unindent(): void;
@@ -11,4 +11,5 @@ export interface IGroupingCodeGenerator {
 	DefineEnum(name: GrpcSymbol, cb: () => void): void;
 	Group(groupNames: GrpcSymbol[], cb: () => void): void;
 	Generate(vd: VirtualDirectory): void;
+	AddImport(symbol: NamespacedSymbol, importAs: string): void;
 }

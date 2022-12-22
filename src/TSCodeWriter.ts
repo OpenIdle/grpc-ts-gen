@@ -24,7 +24,7 @@ export class TSCodeWriter implements ICodeWriter {
 		this._requestBodyAsParameters = requestBodyAsParameters;
 		this._serviceWriters = [];
 		this._serverName = serverName;
-		this._definitionWriter = new TSCodeGenerator(this._namingTransformer, "definitions.ts", GroupingMode.Namespace);
+		this._definitionWriter = new TSCodeGenerator(this._namingTransformer);
 	}
 
 	private GetFullSymbolName(symbol: NamespacedSymbol): string {

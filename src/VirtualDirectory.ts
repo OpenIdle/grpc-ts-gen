@@ -30,7 +30,6 @@ export class VirtualDirectory {
 		if (nextVirtualDirectory == null) {
 			nextVirtualDirectory = new VirtualDirectory();
 			this.AddEntry(pathComponents[0], nextVirtualDirectory);
-			return;
 		}
 		nextVirtualDirectory.AddDeepEntry(pathComponents.slice(1), entry);
 	}

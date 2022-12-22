@@ -4,7 +4,9 @@
   "description": "",
   "main": "./dist/src/index.js",
   "scripts": {
-    "test": "npx mocha",
+    "build": "npx tsc",
+    "test": "npx mocha --enable-source-maps",
+    "test-watch": "npx mocha --watch --enable-source-maps",
     "lint": "npx eslint src/**/*.ts test/**/*.ts"
   },
   "repository": {
