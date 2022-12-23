@@ -80,7 +80,7 @@ describe("DynamicTest", () => {
 	},);
 	it("Should be able to include the generated files", async () => {
 		// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-		await import("./../../dynamic-test/DynamicTestServer");
+		await import("./../../dynamic-test/DynamicTestServer" + "");
 	});
 
 	it("Should be able to construct server", async () => {
