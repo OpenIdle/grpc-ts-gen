@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+package test.data.servicesamples;
+
+message SimpleRequest {
+	string username = 1;
+	uint32 someNumber = 2;
+	int32 signedNumber = 3;
+	string anotherString = 4;
+}
+
+message SimpleResponse {
+	string username = 1;
+	uint32 someNumber = 2;
+	int32 signedNumber = 3;
+	string anotherString = 4;
+}
+
+service SimpleService {
+	rpc method1(SimpleRequest) returns (SimpleResponse);
+}

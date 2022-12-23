@@ -19,6 +19,8 @@ export class DefaultTransformer implements INamingTransformer {
 				return ToPascalCase(symbol.Decompose());
 			case SymbolType.Service:
 				return ToPascalCase(symbol.Decompose());
+			case SymbolType.Special:
+				return symbol.name;
 			default:
 				throw new Error("Unknown symbol type");
 		}

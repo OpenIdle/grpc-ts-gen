@@ -7,11 +7,11 @@ export enum SymbolType {
 	Service,
 	Procedure,
 	Field,
-	Message
+	Message,
+	Special
 }
 
 export class GrpcSymbol {
-
 	constructor(name: string, type: SymbolType) {
 		this.name = name;
 		this.type = type;
@@ -78,9 +78,13 @@ export class NamespacedSymbol {
 			new GrpcSymbol(name, symbolType)
 		);
 	}
-
-	Assemble(): string {
-		return this.namespace.map(x => x.name).join(".") + "." + this.name.name;
+	//this should be removed since its easy to mess up by using this when nameing transformer should be used
+	Assemble(seperator?: string): string {
+		if (this.namespace.length == 0) {
+			return this.name.name;
+		} else {
+			return this.namespace.map(x => x.name).join(seperator ?? ".") + (seperator ?? ".") + this.name.name;
+		}
 	}
 
 	namespace: GrpcSymbol[];
@@ -203,7 +207,7 @@ export class ProtoDefinition {
 		return rv;
 	}
 
-	private ResolveForwardDependencies() {
+	private ResolveForwardDependencies(): void {
 		for (const message of this.messages.values()) {
 			for (const field of message.fields) {
 				if (field.type instanceof UnresolvedForwardDependencyType) {
@@ -232,7 +236,7 @@ export class ProtoDefinition {
 		}
 	}
 
-	private ResolveForwardDependencyType(type: UnresolvedForwardDependencyType) {
+	private ResolveForwardDependencyType(type: UnresolvedForwardDependencyType): GrpcType {
 		const resolvedType = this.ResolveGrpcType(type.namespaces, type.accessString);
 		if (resolvedType instanceof UnresolvedForwardDependencyType) {
 			throw new Error(`Cannot resolve type "${resolvedType.accessString}" from namespace "${ProtoDefinition.NamespacesToString(resolvedType.namespaces)}"`);
@@ -256,7 +260,7 @@ export class ProtoDefinition {
 		}
 	}
 
-	private CreateEnumDefinition(namespaces: GrpcSymbol[], name: string, _enum: IEnum) {
+	private CreateEnumDefinition(namespaces: GrpcSymbol[], name: string, _enum: IEnum): void {
 		const enumDefinition = new EnumDefinition(
 			new NamespacedSymbol(namespaces, new GrpcSymbol(name, SymbolType.Enum)),
 			[]
@@ -269,7 +273,7 @@ export class ProtoDefinition {
 		this.enums.set(enumDefinition.symbol.Assemble(), enumDefinition);
 	}
 
-	private CreateServiceDefinition(namespaces: GrpcSymbol[], name: string, service: IService) {
+	private CreateServiceDefinition(namespaces: GrpcSymbol[], name: string, service: IService): void {
 		const serviceDefinition = new ServiceDefinition(new NamespacedSymbol(namespaces, new GrpcSymbol(name, SymbolType.Service)), []);
 		for (const [methodName, method] of Object.entries(service.methods)) {
 			serviceDefinition.methods.push(
@@ -284,7 +288,7 @@ export class ProtoDefinition {
 
 	}
 
-	private CreateMessageDefinition(namespaces: GrpcSymbol[], name: string, type: IType) {
+	private CreateMessageDefinition(namespaces: GrpcSymbol[], name: string, type: IType): void {
 		const messageDefinition = new MessageDefinition(
 			new NamespacedSymbol(namespaces, new GrpcSymbol(name, SymbolType.Message)),
 			[]
