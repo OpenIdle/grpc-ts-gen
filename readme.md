@@ -25,14 +25,15 @@ service HelloService {
 This is the only code needed to implement a server
 
 ```ts
-import { ProtoServer } from "./generated/ProtoServer";
-import { Example } from "./generated/definitions"
+import { ProtoServer } from "./sample-out/ProtoServer";
+import { IHelloService, HelloRequest, HelloResponse } from "./sample-out/Example/HelloService"
 import { GrpcResponseError } from "grpc-ts-gen";
 import * as grpc from "@grpc/grpc-js";
-let server = new ProtoServer();
 
-class HelloService implements Example.HelloService.HelloService {
-	async Hello(request: Example.HelloService.HelloRequest): Promise<Example.HelloService.HelloResponse> {
+let server = new ProtoServer(new grpc.Server());
+
+class HelloService implements IHelloService {
+	async Hello(request: HelloRequest): Promise<HelloResponse> {
 		if (request.hello != "hello") {
 			throw new GrpcResponseError("Expected hello", grpc.status.INVALID_ARGUMENT)
 		}
