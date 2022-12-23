@@ -1,5 +1,7 @@
+import { ServiceDefinition } from "@grpc/proto-loader";
 import { join } from "path";
 import protobuf from "protobufjs";
+import { IGrpcServerImplementation, Implementation, ProcedureCallback } from "../src";
 import { GrpcSymbol, ProtoDefinition } from "../src/GRPCDefinitionTranslator";
 import { INamingTransformer } from "../src/INamingTransformer";
 
@@ -30,5 +32,31 @@ export class MockNamingTransformer implements INamingTransformer {
 		}
 		return symbol.name;
 	}
+}
 
+export class MockGrpcServerImplementation implements IGrpcServerImplementation {
+	private _mockImplementations: Map<string, {methodName: string, impl: Implementation<unknown>}>;
+	constructor() {
+		this._mockImplementations = new Map();
+	}
+	
+	addService(service: ServiceDefinition, implementation: Implementation<unknown>): void {
+		for (const [key, value] of Object.entries(service)) {
+			this._mockImplementations.set(value.path, {methodName: key, impl: implementation});
+		}
+		return;
+	}
+
+
+	async mockCall(path: string, callObject: unknown): Promise<{err: {code: number} | null, response?: unknown}> {
+		const handler = this._mockImplementations.get(path);
+		if (handler == null) {
+			throw new Error("No hanlder for that path");
+		}
+		return await new Promise((resolve) => {
+			handler.impl[handler.methodName]({request: callObject}, (err, response) => {
+				resolve({err: err, response: response});
+			});
+		});
+	}
 }

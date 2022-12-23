@@ -43,6 +43,7 @@
             "error",
             "always"
         ],
+        "require-await": "off",
         "@typescript-eslint/restrict-template-expressions": [
             "error",
             {
@@ -58,6 +59,7 @@
             {
                 "allowExpressions": true
             }
-        ]
+        ],
+        "@typescript-eslint/require-await": "off"
     }
 }

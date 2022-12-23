@@ -2,7 +2,6 @@ import { ICodeGenerator } from "./ICodeGenerator";
 import { VirtualDirectory } from "./VirtualDirectory";
 
 export default class CodeGenerator implements ICodeGenerator {
-	
 	_lines: {indentation: number, line: string}[];
 	_currentIndentation: number;
 	private _path: string[];

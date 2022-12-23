@@ -102,5 +102,19 @@
     "./src/*.ts",
     "./test/*.ts",
     "./test/**/*.ts"
-, "test/GRPCDefinitionTranslator", "test/data/messagesamples/simpleMessage.proto", ]
+  ],
+  "exclude": [
+    "node_modules",
+    "dynamic-test"
+  ],
+  "watchOptions": {
+    "excludeDirectories": [
+      "node_modules",
+      "dynamic-test"
+    ],
+    "excludeFiles": [
+      "dynamic-test/**/*.ts",
+      "dynamic-test/*.ts",
+    ]
+  }
 }

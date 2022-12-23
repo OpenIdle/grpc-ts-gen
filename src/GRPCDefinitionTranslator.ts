@@ -12,7 +12,6 @@ export enum SymbolType {
 }
 
 export class GrpcSymbol {
-
 	constructor(name: string, type: SymbolType) {
 		this.name = name;
 		this.type = type;

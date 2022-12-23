@@ -29,13 +29,6 @@ export class TSCodeWriter implements ICodeWriter {
 		this._grpcTsGenModulePath = grpcTsGenModulePath;
 	}
 
-	private GetFullSymbolName(symbol: NamespacedSymbol): string {
-		return symbol.namespace
-			.map(x => this._namingTransformer.ConvertSymbol(x))
-			.join(".") + 
-		"." + this._namingTransformer.ConvertSymbol(symbol.name);
-	}
-
 	private GetTSTypeNameAndImport(type: GrpcType, codeGenerator: IModuleCodeGenerator): string {
 		if (type instanceof GrpcEnumType || type instanceof GrpcMessageType) {
 			const importName = `IMPORT_${type.symbol.namespace.map(x => x.name).join("_")}_${type.symbol.name.name}`;
@@ -65,7 +58,7 @@ export class TSCodeWriter implements ICodeWriter {
 		this._definitionWriter.Group(message.symbol.namespace, () => {
 			this._definitionWriter.DefineInterface(message.symbol.name, () => {
 				for (const field of message.fields) {
-					this._definitionWriter.AddLine(`readonly ${field.symbol.name}: ${this.GetTSTypeNameAndImport(field.type, this._definitionWriter)};`);
+					this._definitionWriter.AddLine(`readonly ${this._namingTransformer.ConvertSymbol(field.symbol)}: ${this.GetTSTypeNameAndImport(field.type, this._definitionWriter)};`);
 				}
 			});
 		});
@@ -91,7 +84,7 @@ export class TSCodeWriter implements ICodeWriter {
 					} else {
 						parameters = "request: " + this.GetTSTypeNameAndImport(method.inputType, this._definitionWriter);
 					}
-					this._definitionWriter.AddLine(`${method.symbol.name}: (${parameters}) => Promise<${this.GetTSTypeNameAndImport(method.outputType, this._definitionWriter)}>;`);
+					this._definitionWriter.AddLine(`${this._namingTransformer.ConvertSymbol(method.symbol)}: (${parameters}) => Promise<${this.GetTSTypeNameAndImport(method.outputType, this._definitionWriter)}>;`);
 				}
 			});
 		});
@@ -106,41 +99,47 @@ export class TSCodeWriter implements ICodeWriter {
 	WriteServer(protoDefinition: ProtoDefinition, pbjsDefinition: INamespace): void {
 		const packageDefinitionSymbol = new NamespacedSymbol([new GrpcSymbol("_package_definition", SymbolType.Special)], new GrpcSymbol("protoJson", SymbolType.Special));
 		this._definitionWriter.Group(packageDefinitionSymbol.namespace, () => {
-			this._definitionWriter.AddLine(`export const protoJson: any = ${JSON.stringify(pbjsDefinition)};`);
+			this._definitionWriter.AddLine("import { INamespace } from \"protobufjs\";");
+			//casting to INamespace as a temporary fix until protobufjs definitions are correct
+			this._definitionWriter.AddLine(`export const protoJson: INamespace = ${JSON.stringify(pbjsDefinition)} as INamespace;`);
 		});
 		
 		const className = `${this._serverName}Server`;
 
 		this._definitionWriter.Group([new GrpcSymbol(className, SymbolType.Special)], () => {
 			this._definitionWriter.AddImport(packageDefinitionSymbol);
-			this._definitionWriter.AddLine("import * as grpc from '@grpc/grpc-js';");
-			this._definitionWriter.AddLine("import * as protoLoader from '@grpc/proto-loader';");
+			this._definitionWriter.AddLine("import * as protoLoader from \"@grpc/proto-loader\";");
 			
-			this._definitionWriter.AddLine(`import {GrpcResponseError} from  ${JSON.stringify(this._grpcTsGenModulePath)};`);
+			this._definitionWriter.AddLine(`import {GrpcResponseError, IGrpcServerImplementation} from  ${JSON.stringify(this._grpcTsGenModulePath)};`);
 			this._definitionWriter.AddLine(`export class ${className} {`);
 			this._definitionWriter.Indent();
-			this._definitionWriter.AddLine("private _grpcServer: grpc.Server;");
-			this._definitionWriter.AddLine("get GrpcServer(): grpc.Server { return this._grpcServer; }");
+			this._definitionWriter.AddLine("private _grpcServer: IGrpcServerImplementation;");
+			this._definitionWriter.AddLine("get GrpcServer(): IGrpcServerImplementation { return this._grpcServer; }");
 			this._definitionWriter.AddLine("private _packageDefinition: protoLoader.PackageDefinition;");
-			this._definitionWriter.AddLine("constructor() {");
+			this._definitionWriter.AddLine("constructor(serverImplementation: IGrpcServerImplementation) {");
 			this._definitionWriter.Indent();
-			this._definitionWriter.AddLine("this._grpcServer = new grpc.Server();");
+			this._definitionWriter.AddLine("this._grpcServer = serverImplementation;");
 			this._definitionWriter.AddLine("this._packageDefinition = protoLoader.fromJSON(protoJson);");
 			this._definitionWriter.Unindent();
 			this._definitionWriter.AddLine("}");
 			for (const service of protoDefinition.GetServices()) {
-				this._definitionWriter.AddLine(`Add${service.symbol.name.name}(service: ${this.ImportSymbol(service.symbol)}) {`);
+				this._definitionWriter.AddLine(`Add${service.symbol.name.name}(service: ${this.ImportSymbol(service.symbol)}): void {`);
 				this._definitionWriter.Indent();
-				this._definitionWriter.AddLine(`this._grpcServer.addService((this._packageDefinition as any).${service.symbol.Assemble()}, {`);
+				this._definitionWriter.AddLine(`this._grpcServer.addService<any>(this._packageDefinition[${JSON.stringify(service.symbol.Assemble())}] as protoLoader.ServiceDefinition, {`);
 				this._definitionWriter.Indent();
 				for (const method of service.methods) {
 					this._definitionWriter.AddLine(`${JSON.stringify(method.symbol.name)}: (callObject, callback) => {`);
 					this._definitionWriter.Indent();
-					this.TranslateType("callObject.request", "translatedCallObject", this._definitionWriter, method.inputType, protoDefinition);
+					this.TransformType("callObject.request", "translatedCallObject", this._definitionWriter, method.inputType, protoDefinition);
 	
 					this._definitionWriter.AddLine(`service.${this._namingTransformer.ConvertSymbol(method.symbol)}(translatedCallObject)`);
 					this._definitionWriter.Indent();
-					this._definitionWriter.AddLine(".then((response) => callback(null, response))");
+					this._definitionWriter.AddLine(".then((response) => {");
+					this._definitionWriter.IndentBlock(() => {
+						this.UntransformType("response", "translatedResponse", this._definitionWriter, method.outputType, protoDefinition);
+						this._definitionWriter.AddLine("callback(null, translatedResponse);");
+					});
+					this._definitionWriter.AddLine("})");
 					this._definitionWriter.AddLine(".catch((err) => {");
 					this._definitionWriter.Indent();
 					this._definitionWriter.AddLine("if (err instanceof GrpcResponseError)");
@@ -165,13 +164,29 @@ export class TSCodeWriter implements ICodeWriter {
 		});
 	}
 
-	private TranslateType(from: string, to: string, generator: ICodeGenerator, type: GrpcType, protoDefinition: ProtoDefinition): void {
+	private TransformType(from: string, to: string, generator: ICodeGenerator, type: GrpcType, protoDefinition: ProtoDefinition): void {
 		if (type instanceof GrpcMessageType) {
 			const message = protoDefinition.FindMessage(type.symbol);
 			generator.AddLine(`const ${to} = {`);
 			generator.Indent();
 			for (const field of message.fields) {
 				generator.AddLine(`${JSON.stringify(this._namingTransformer.ConvertSymbol(field.symbol))}: ${from}[${JSON.stringify(field.symbol.name)}],`);
+			}
+			generator.Unindent();
+			generator.AddLine("}");
+		} else {
+			generator.AddLine(`const ${to} = ${from}`);
+
+		}
+	}
+
+	private UntransformType(from: string, to: string, generator: ICodeGenerator, type: GrpcType, protoDefinition: ProtoDefinition): void {
+		if (type instanceof GrpcMessageType) {
+			const message = protoDefinition.FindMessage(type.symbol);
+			generator.AddLine(`const ${to} = {`);
+			generator.Indent();
+			for (const field of message.fields) {
+				generator.AddLine(`${JSON.stringify(field.symbol.name)}: ${from}[${JSON.stringify(this._namingTransformer.ConvertSymbol(field.symbol))}],`);
 			}
 			generator.Unindent();
 			generator.AddLine("}");
