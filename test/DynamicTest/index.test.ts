@@ -8,8 +8,8 @@ import { TypeGenerator } from "../../src/TypeGenerator";
 import { MockGrpcServerImplementation, MockNamingTransformer } from "../helper";
 import * as ts from "typescript";
 import { assert } from "chai";
-import { join } from "path";
-import { writeFileSync } from "fs";
+import { dirname, join } from "path";
+import { mkdirSync, writeFileSync } from "fs";
 import { SymbolType } from "../../src/GRPCDefinitionTranslator";
 
 describe("DynamicTest", () => {
@@ -50,6 +50,7 @@ describe("DynamicTest", () => {
 		//therefore we need to avoid compiling the files from the src folder aince they should 
 		//be compiled already
 		const emitResult = program.emit(undefined, (fileName, text) => {
+			mkdirSync(dirname(fileName), {recursive: true});
 			if (fileName.startsWith("dist/dynamic-test/")) {
 				writeFileSync(fileName, text, {encoding: "utf8"});
 			}
