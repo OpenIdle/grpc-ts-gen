@@ -22,7 +22,7 @@ class Importation {
 		const existingImport = this.imports.get(symbol.name);
 		if (existingImport != null) {
 			if (existingImport.importAs != importAs) {
-				throw new Error("Tried to import the same symbol with two different aliases");
+				throw new Error(`Tried to import ${symbol.name} symbol with two different aliases, first ${existingImport.importAs ?? existingImport.symbol.name}, second ${importAs ?? symbol.name}}`);
 			}
 			return;
 		}

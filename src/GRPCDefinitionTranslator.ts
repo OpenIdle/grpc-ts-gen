@@ -80,8 +80,12 @@ export class NamespacedSymbol {
 		);
 	}
 	//this should be removed since its easy to mess up by using this when nameing transformer should be used
-	Assemble(): string {
-		return this.namespace.map(x => x.name).join(".") + "." + this.name.name;
+	Assemble(seperator?: string): string {
+		if (this.namespace.length == 0) {
+			return this.name.name;
+		} else {
+			return this.namespace.map(x => x.name).join(seperator ?? ".") + (seperator ?? ".") + this.name.name;
+		}
 	}
 
 	namespace: GrpcSymbol[];

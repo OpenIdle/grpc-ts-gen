@@ -1,24 +1,8 @@
 import { assert } from "chai";
 import { GrpcSymbol, NamespacedSymbol, SymbolType } from "../src/GRPCDefinitionTranslator";
-import { INamingTransformer } from "../src/INamingTransformer";
 import { TSCodeGenerator } from "../src/TSCodeGenerator";
 import { VirtualDirectory } from "../src/VirtualDirectory";
-
-class MockNamingTransformer implements INamingTransformer {
-	private _modifier?: (symbol: GrpcSymbol) => string;
-	
-	constructor(modifier?: (symbol: GrpcSymbol) => string) {
-		this._modifier = modifier;
-	}
-
-	ConvertSymbol(symbol: GrpcSymbol): string {
-		if (this._modifier) {
-			return this._modifier(symbol);
-		}
-		return symbol.name;
-	}
-
-}
+import { MockNamingTransformer } from "./helper";
 
 describe("TSCodeWriter test", () => {
 	describe("Code generation", () => {

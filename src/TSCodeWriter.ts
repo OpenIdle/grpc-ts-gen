@@ -15,15 +15,18 @@ export class TSCodeWriter implements ICodeWriter {
 	_namingTransformer: INamingTransformer;
 	_requestBodyAsParameters: boolean;
 	_serverName: string;
+	_grpcTsGenModulePath: string;
 	constructor(
 		namingTransformer: INamingTransformer, 
 		requestBodyAsParameters: boolean,
 		serverName: string,
+		grpcTsGenModulePath: string,
 	) {
 		this._namingTransformer = namingTransformer;
 		this._requestBodyAsParameters = requestBodyAsParameters;
 		this._serverName = serverName;
 		this._definitionWriter = new TSCodeGenerator(this._namingTransformer);
+		this._grpcTsGenModulePath = grpcTsGenModulePath;
 	}
 
 	private GetFullSymbolName(symbol: NamespacedSymbol): string {
@@ -94,6 +97,12 @@ export class TSCodeWriter implements ICodeWriter {
 		});
 	}
 
+	private ImportSymbol(symbol: NamespacedSymbol): string {
+		const importedName = "IMPORT_" + symbol.Assemble("_");
+		this._definitionWriter.AddImport(symbol, importedName);
+		return importedName;
+	}
+
 	WriteServer(protoDefinition: ProtoDefinition, pbjsDefinition: INamespace): void {
 		const packageDefinitionSymbol = new NamespacedSymbol([new GrpcSymbol("_package_definition", SymbolType.Special)], new GrpcSymbol("protoJson", SymbolType.Special));
 		this._definitionWriter.Group(packageDefinitionSymbol.namespace, () => {
@@ -107,7 +116,7 @@ export class TSCodeWriter implements ICodeWriter {
 			this._definitionWriter.AddLine("import * as grpc from '@grpc/grpc-js';");
 			this._definitionWriter.AddLine("import * as protoLoader from '@grpc/proto-loader';");
 			
-			this._definitionWriter.AddLine("import {GrpcResponseError} from 'grpc-ts-gen';");
+			this._definitionWriter.AddLine(`import {GrpcResponseError} from  ${JSON.stringify(this._grpcTsGenModulePath)};`);
 			this._definitionWriter.AddLine(`export class ${className} {`);
 			this._definitionWriter.Indent();
 			this._definitionWriter.AddLine("private _grpcServer: grpc.Server;");
@@ -120,11 +129,9 @@ export class TSCodeWriter implements ICodeWriter {
 			this._definitionWriter.Unindent();
 			this._definitionWriter.AddLine("}");
 			for (const service of protoDefinition.GetServices()) {
-				this._definitionWriter.AddImport(service.symbol);
-
-				this._definitionWriter.AddLine(`Add${service.symbol.name.name}(service: ${this.GetFullSymbolName(service.symbol)}) {`);
+				this._definitionWriter.AddLine(`Add${service.symbol.name.name}(service: ${this.ImportSymbol(service.symbol)}) {`);
 				this._definitionWriter.Indent();
-				this._definitionWriter.AddLine(`this._grpcServer.addService((this._packageDefinition as any).${this.GetFullSymbolName(service.symbol)}, {`);
+				this._definitionWriter.AddLine(`this._grpcServer.addService((this._packageDefinition as any).${service.symbol.Assemble()}, {`);
 				this._definitionWriter.Indent();
 				for (const method of service.methods) {
 					this._definitionWriter.AddLine(`${JSON.stringify(method.symbol.name)}: (callObject, callback) => {`);
