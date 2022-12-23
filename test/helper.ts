@@ -1,7 +1,7 @@
 import { ServiceDefinition } from "@grpc/proto-loader";
 import { join } from "path";
 import protobuf from "protobufjs";
-import { IGrpcServerImplementation, Implementation, ProcedureCallback } from "../src";
+import { IGrpcServerImplementation, Implementation } from "../src";
 import { GrpcSymbol, ProtoDefinition } from "../src/GRPCDefinitionTranslator";
 import { INamingTransformer } from "../src/INamingTransformer";
 

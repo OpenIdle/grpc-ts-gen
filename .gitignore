@@ -3,3 +3,4 @@ package-lock.json
 dist/
 testout/
 dynamic-test/
+.nyc_output/

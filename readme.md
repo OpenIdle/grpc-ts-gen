@@ -1,4 +1,8 @@
 # grpc-ts-gen
+![npm](https://img.shields.io/npm/v/grpc-ts-gen)
+![npm downloads](https://img.shields.io/npm/dm/grpc-ts-gen) 
+![nycrc config on GitHub](https://img.shields.io/nycrc/OpenIdle/grpc-ts-gen) 
+
 `grpc-ts-gen` is a tool for generating a typed grpc server and client from protobuf descriptors.
 
 This means that the only thing needed for implementing a GRPC service is implementing a simple typescript interface.
