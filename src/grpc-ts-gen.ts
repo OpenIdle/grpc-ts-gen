@@ -60,22 +60,22 @@ async function main(args: string[]): Promise<number> {
 
 	for (let i = 2; i < args.length; i++) {
 		if (i + 1 < args.length) {
-			if (args[i].toLowerCase() == "--protobasepath") {
+			if (args[i].toLowerCase() == "--proto-base-path") {
 				customOptions.protoBasePath = args[i + 1];
 				i++;
 				continue;
-			} else if (args[i].toLowerCase() == "--outpath") {
+			} else if (args[i].toLowerCase() == "--out-path") {
 				customOptions.outPath = args[i + 1];
 				i++;
 				continue;
-			} else if (args[i].toLowerCase() == "--servername") {
+			} else if (args[i].toLowerCase() == "--server-name") {
 				customOptions.serverName = args[i + 1];
 				i++;
 				continue;
 			}
 		}
 
-		if (args[i].toLowerCase() == "--requestbodyasobject") {
+		if (args[i].toLowerCase() == "--request-body-as-object") {
 			customOptions.requestBodyAsParameters = false;
 		}
 	}
