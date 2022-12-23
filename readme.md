@@ -57,7 +57,7 @@ This is not just a dev dependency, since this library also contains a small help
 
 Generate definitions using:
 ```
-npx grpc-ts-gen --protobasepath <root protobuf path> --outpath <output folder>
+npx grpc-ts-gen --proto-base-path <root protobuf path> --out-path <output folder>
 ```
 
 
@@ -66,12 +66,12 @@ grpc-ts-gen has many options to customize the generated code. A table of the opt
 
 | Name | Description | Required |
 |------|-------------|----------|
-| `protoBasePath` | The base path for protobuf definition files | ✔️ |
-| `outPath` | The base path for the generated files | ✔️ |
-| `serverName` | The name of the file where the generated server is defined | ❌ |
-| `requestBodyAsObject` | Supply the request object as parameters as a handler instead of an object | ❌ |
+| `proto-base-path` | The base path for protobuf definition files | ✔️ |
+| `out-path` | The base path for the generated files | ✔️ |
+| `server-name` | The name of the file where the generated server is defined | ❌ |
+| `request-body-as-object` | Supply the request object as parameters as a handler instead of an object | ❌ |
 
-These options can also be defined in a JSON file called `grpc-ts-gen.config.json`
+These options can also be defined in a JSON file called `grpc-ts-gen.config.json`, here they are named with camelCase instead of kebab-case.
 ```
 // grpc-ts-gen.config.json
 {
