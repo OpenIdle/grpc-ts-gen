@@ -49,5 +49,5 @@ describe("DefaultTransformer tests", () => {
 	it("should throw on unknown symbol type", () => {
 		const transformer = new DefaultTransformer();
 		assert.throws(() => transformer.ConvertSymbol(new GrpcSymbol("test", Number.MAX_SAFE_INTEGER as SymbolType)), "Should throw when an unknown symbol type is used");
-	}
+	});
 });
