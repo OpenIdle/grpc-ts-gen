@@ -19,7 +19,7 @@ export class GrpcSymbol {
 
 	Decompose(): string[] {
 		if (this.name.length == 0) {
-			return [""];
+			return [];
 		}
 
 		let allCharactersUppercase = true;
@@ -32,17 +32,17 @@ export class GrpcSymbol {
 
 		if (allCharactersUppercase) {
 			//Screaming snake case
-			return this.name.split("_").map(part => part.toLowerCase());
+			return this.name.split(/(?<=[^_])_/).map(part => part.toLowerCase());
 		} else {
 			//either snake case, pascal case, camel case or a mix
 			return this.name
-				.split("_")
+				.split(/(?<=[^_])_/)
 				.map((part) => {
 					const splitted = [];
 					let acc = "";
 					for (let i = 0; i < part.length; i++) {
 						const c = part.charAt(i);
-						if (c.toUpperCase() == c) {
+						if (c.toUpperCase() == c && c != "_") {
 							if (acc.length != 0) {
 								splitted.push(acc);
 							}
@@ -344,6 +344,7 @@ export class ProtoDefinition {
 			
 			currentNamespaceStack.splice(currentNamespaceStack.length-1);
 		}
+
 		const message = this.messages.get(accessString);
 		if (message)
 			return new GrpcMessageType(message.symbol);

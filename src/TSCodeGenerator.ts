@@ -184,11 +184,9 @@ export class TSCodeGenerator implements IModuleCodeGenerator {
 	}
 
 	private ResolveModulePath(currentModule: ModuleDescription, targetModulePath: GrpcSymbol[]): string {
-		let currentPath = path.dirname(currentModule.symbolPath.map((symbol) => this._namingTransformer.ConvertSymbol(symbol)).join("/"));
+		const currentPath = path.dirname(currentModule.symbolPath.map((symbol) => this._namingTransformer.ConvertSymbol(symbol)).join("/"));
 		const targetPath = targetModulePath.map((symbol) => this._namingTransformer.ConvertSymbol(symbol)).join("/");
-		if (currentPath == "index") {
-			currentPath = "";
-		}
+
 		if (currentPath == targetPath) {
 			return "./../" + targetPath;
 		}

@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+import "messagesamples/SimpleMessage.proto";
+import "enumsamples/SimpleEnum.proto";
+
+package other.namespace;
+
+message OtherMessage {
+    test.data.messagesamples.SimpleMessage simpleMessage = 1;
+    test.data.enumsamples.Status status = 2;
+}

@@ -91,6 +91,7 @@ describe("DynamicTest", () => {
 
 	it("Should be able to add a service", async () => {
 		const {DynamicTestServer} = await import("./../../dynamic-test/DynamicTestServer" + "");
+		const {SimpleEnumEnum} = await import("./../../dynamic-test/testNamespace/dataNamespace/servicesamplesNamespace" + "");
 		const testServer = new DynamicTestServer(new MockGrpcServerImplementation());
 		testServer.AddSimpleService({
 			method1: async (request: any) => {
@@ -99,6 +100,7 @@ describe("DynamicTest", () => {
 					"signedNumber": request.signedNumber,
 					"username": request.username,
 					"anotherString": request.anotherString,
+					"someEnumField": SimpleEnumEnum.VALUE44
 				};
 			}
 		});
@@ -106,15 +108,18 @@ describe("DynamicTest", () => {
 
 	it("Should be able to use a service", async () => {
 		const {DynamicTestServer} = await import("./../../dynamic-test/DynamicTestServer" + "");
+		const {SimpleEnumEnum} = await import("./../../dynamic-test/testNamespace/dataNamespace/servicesamplesNamespace" + "");
 		const mockGrpcServer = new MockGrpcServerImplementation();
 		const testServer = new DynamicTestServer(mockGrpcServer);
+		let receivedRequestObject = {};
 		testServer.AddSimpleService({
 			method1Procedure: async (request: any) => {
+				receivedRequestObject = request;
 				return {
 					"someNumberField": request.someNumberField + 1,
 					"signedNumberField": request.signedNumberField + 1,
 					"usernameField": request.usernameField + "baz",
-					"anotherStringField": request.anotherStringField + " ipsum",
+					"anotherStringField": request.anotherStringField + " ipsum"
 				};
 			}
 		});
@@ -124,6 +129,15 @@ describe("DynamicTest", () => {
 			"signedNumber": 54,
 			"username": "foobar",
 			"anotherString": "lorem",
+			"someEnum": SimpleEnumEnum.VALUE323
+		});
+
+		assert.deepEqual(receivedRequestObject, {
+			"someNumberField": 42,
+			"signedNumberField": 54,
+			"usernameField": "foobar",
+			"anotherStringField": "lorem",
+			"someEnumField": SimpleEnumEnum.VALUE323
 		});
 
 		assert.deepEqual(response.response, {

@@ -64,4 +64,17 @@ describe("GRPCDefintionTranslator enums test", () => {
 
 		assert.equal(enumNames.size, 2);
 	});
+
+	it("Should be able to find an enum via FindEnum", async () => {
+		const data = await loadFromPbjsDefinition([
+			"enumsamples/HoleyEnum.proto", 
+			"enumsamples/SimpleEnum.proto"
+		]);
+		assert.deepEqual(
+			data.FindEnum(NamespacedSymbol.FromString("test.data.enumsamples.HoleyStatus", 
+				SymbolType.Enum
+			)),
+			ExpectedHoleyStatusData
+		);
+	});
 });

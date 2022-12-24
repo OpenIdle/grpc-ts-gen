@@ -2,20 +2,36 @@ syntax = "proto3";
 
 package test.data.servicesamples;
 
+enum SimpleEnum {
+	VALUE1 = 0;
+	VALUE44 = 44;
+	VALUE323 = 323;
+}
+
 message SimpleRequest {
 	string username = 1;
 	uint32 someNumber = 2;
 	int32 signedNumber = 3;
 	string anotherString = 4;
+	SimpleEnum someEnum = 5;
 }
 
 message SimpleResponse {
 	string username = 1;
 	uint32 someNumber = 2;
-	int32 signedNumber = 3;
+	int64 signedNumber = 3;
 	string anotherString = 4;
+}
+
+message DifferentRequest {
+	oneof oneofField {
+		string name = 1;
+		int32 num = 2;
+		SimpleRequest simpleRequest = 3;
+	}
 }
 
 service SimpleService {
 	rpc method1(SimpleRequest) returns (SimpleResponse);
+	rpc method2(DifferentRequest) returns (SimpleResponse);
 }
