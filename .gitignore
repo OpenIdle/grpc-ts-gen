@@ -5,4 +5,4 @@ testout/
 dynamic-test/
 .nyc_output/
 smoke-out/
-.coverage/
+coverage/
