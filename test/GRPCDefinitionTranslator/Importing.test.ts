@@ -43,6 +43,20 @@ const ExpectedStatusData = new EnumDefinition(
 	]
 );
 
+const ExpectedOtherMessage = new MessageDefinition(
+	NamespacedSymbol.FromString("other.namespace.OtherMessage", SymbolType.Message),
+	[
+		new MessageField(
+			new GrpcSymbol("simpleMessage", SymbolType.Field),
+			new GrpcMessageType(NamespacedSymbol.FromString("test.data.messagesamples.SimpleMessage", SymbolType.Message))
+		),
+		new MessageField(
+			new GrpcSymbol("status", SymbolType.Field),
+			new GrpcEnumType(NamespacedSymbol.FromString("test.data.enumsamples.Status", SymbolType.Enum))
+		)
+	]
+);
+
 describe("Importing and referencing other files and namespaces", () => {
 	it("Import enum and message", async () => {
 		const data = await loadFromPbjsDefinition([
@@ -59,6 +73,31 @@ describe("Importing and referencing other files and namespaces", () => {
 		for (const message of messages) {
 			if (message.symbol.name.name == "ImportedDependencies") {
 				assert.deepEqual(message, ExpectedImportedDependencies, "ImportedDependencies is wrong");
+			} else if (message.symbol.name.name == "SimpleMessage") {
+				assert.deepEqual(message, ExepctedSimpleMessage, "SimpleMessage is wrong");
+			} else {
+				assert.fail("Unexpected message " + message.symbol.Assemble());
+			}
+		}
+
+		assert.deepEqual(enums[0], ExpectedStatusData, "ExpectedStatusData is wrong");
+	});
+
+	it("Should import correctly from disjoint namespace", async () => {
+		const data = await loadFromPbjsDefinition([
+			"messagesamples/SimpleMessage.proto",
+			"messagesamples2/ReferingToDisjointNamespace.proto",
+			"enumsamples/SimpleEnum.proto"
+		]);
+		
+		const messages = Array.from(data.GetMessages());
+		const enums = Array.from(data.GetEnums());
+		assert.equal(messages.length, 2, "Expected 2 messages");
+		assert.equal(enums.length, 1, "Expected 1 enum");
+		
+		for (const message of messages) {
+			if (message.symbol.name.name == "OtherMessage") {
+				assert.deepEqual(message, ExpectedOtherMessage, "OtherMessage is wrong");
 			} else if (message.symbol.name.name == "SimpleMessage") {
 				assert.deepEqual(message, ExepctedSimpleMessage, "SimpleMessage is wrong");
 			} else {

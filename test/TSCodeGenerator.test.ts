@@ -37,6 +37,48 @@ describe("TSCodeWriter test", () => {
 			const entries = Array.from(vd.GetEntries());
 			assert.deepEqual(entries[0], ["index.ts", "Some statement\n\tSome other statement\nSome third statement"], "The entry should be called index.ts with correct content");
 		});
+
+		it("Should throw on unmatched unindents", () => {
+			const codeGenerator = new TSCodeGenerator(new MockNamingTransformer());
+			codeGenerator.AddLine("Some statement");
+			codeGenerator.Indent();
+			codeGenerator.AddLine("Some other statement");
+			codeGenerator.Unindent();
+			codeGenerator.Unindent();
+			const vd = new VirtualDirectory();
+			assert.throw(() =>  codeGenerator.Generate(vd));
+		});
+
+		it("Trying to import the symbol with two different aliases should throw", () => {
+			const codeGenerator = new TSCodeGenerator(new MockNamingTransformer());
+			codeGenerator.AddImport(NamespacedSymbol.FromString("foo.bar", SymbolType.Special), "baz");
+			assert.throw(() => codeGenerator.AddImport(NamespacedSymbol.FromString("foo.bar", SymbolType.Special), "qux"));
+		});
+
+		it("Trying to import the symbol with and withou an alias should throw", () => {
+			const codeGenerator = new TSCodeGenerator(new MockNamingTransformer());
+			codeGenerator.AddImport(NamespacedSymbol.FromString("foo.bar", SymbolType.Special));
+			assert.throw(() => codeGenerator.AddImport(NamespacedSymbol.FromString("foo.bar", SymbolType.Special), "baz"));
+		});
+
+		it("Imports from root should be handled correctly", () => {
+			const codeGenerator = new TSCodeGenerator(new MockNamingTransformer());
+			codeGenerator.Group([new GrpcSymbol("foo", SymbolType.Namespace)], () => {
+				codeGenerator.AddImport(NamespacedSymbol.FromString("foo", SymbolType.Message));
+				codeGenerator.AddLine("");
+			});
+			codeGenerator.AddImport(NamespacedSymbol.FromString("foo.bar", SymbolType.Message));
+			codeGenerator.AddLine("");
+			
+			const vd = new VirtualDirectory();
+			codeGenerator.Generate(vd);
+			const flatEntries = vd.GetFlatEntries();
+
+			assert.equal(flatEntries.get("index.ts"), "import {bar} from \"./foo\";\n");
+			assert.equal(flatEntries.get("foo.ts"), "import {foo} from \"./\";\n");
+
+			assert.deepEqual(new Set(flatEntries.keys()), new Set(["index.ts", "foo.ts"]));
+		});
 	
 		it("Should indent using block correctly", () => {
 			const codeGenerator = new TSCodeGenerator(new MockNamingTransformer());

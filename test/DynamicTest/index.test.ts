@@ -11,6 +11,8 @@ import { assert } from "chai";
 import { dirname, join } from "path";
 import { mkdirSync, writeFileSync } from "fs";
 import { SymbolType } from "../../src/GRPCDefinitionTranslator";
+import { GrpcResponseError } from "../../src";
+import * as grpc from "@grpc/grpc-js";
 
 describe("DynamicTest", () => {
 	const ServerName = "DynamicTest";
@@ -91,6 +93,7 @@ describe("DynamicTest", () => {
 
 	it("Should be able to add a service", async () => {
 		const {DynamicTestServer} = await import("./../../dynamic-test/DynamicTestServer" + "");
+		const {SimpleEnumEnum} = await import("./../../dynamic-test/testNamespace/dataNamespace/servicesamplesNamespace" + "");
 		const testServer = new DynamicTestServer(new MockGrpcServerImplementation());
 		testServer.AddSimpleService({
 			method1: async (request: any) => {
@@ -99,6 +102,7 @@ describe("DynamicTest", () => {
 					"signedNumber": request.signedNumber,
 					"username": request.username,
 					"anotherString": request.anotherString,
+					"someEnumField": SimpleEnumEnum.VALUE44
 				};
 			}
 		});
@@ -106,15 +110,18 @@ describe("DynamicTest", () => {
 
 	it("Should be able to use a service", async () => {
 		const {DynamicTestServer} = await import("./../../dynamic-test/DynamicTestServer" + "");
+		const {SimpleEnumEnum} = await import("./../../dynamic-test/testNamespace/dataNamespace/servicesamplesNamespace" + "");
 		const mockGrpcServer = new MockGrpcServerImplementation();
 		const testServer = new DynamicTestServer(mockGrpcServer);
+		let receivedRequestObject = {};
 		testServer.AddSimpleService({
 			method1Procedure: async (request: any) => {
+				receivedRequestObject = request;
 				return {
 					"someNumberField": request.someNumberField + 1,
 					"signedNumberField": request.signedNumberField + 1,
 					"usernameField": request.usernameField + "baz",
-					"anotherStringField": request.anotherStringField + " ipsum",
+					"anotherStringField": request.anotherStringField + " ipsum"
 				};
 			}
 		});
@@ -124,6 +131,15 @@ describe("DynamicTest", () => {
 			"signedNumber": 54,
 			"username": "foobar",
 			"anotherString": "lorem",
+			"someEnum": SimpleEnumEnum.VALUE323
+		});
+
+		assert.deepEqual(receivedRequestObject, {
+			"someNumberField": 42,
+			"signedNumberField": 54,
+			"usernameField": "foobar",
+			"anotherStringField": "lorem",
+			"someEnumField": SimpleEnumEnum.VALUE323
 		});
 
 		assert.deepEqual(response.response, {
@@ -132,5 +148,21 @@ describe("DynamicTest", () => {
 			"username": "foobarbaz",
 			"anotherString": "lorem ipsum",
 		}, "Response should be correct");
+	});
+
+	it("Should catch errors correctly", async () => {
+		const {DynamicTestServer} = await import("./../../dynamic-test/DynamicTestServer" + "");
+		const mockGrpcServer = new MockGrpcServerImplementation();
+		const testServer = new DynamicTestServer(mockGrpcServer);
+		testServer.AddSimpleService2({
+			method1Procedure: async () => {
+				throw new GrpcResponseError("Some error", grpc.status.INVALID_ARGUMENT);
+			}
+		});
+		const response = await mockGrpcServer.mockCall("/test.data.servicesamples.nested.SimpleService2/method1", {
+			"username": "foobar"
+		});
+
+		assert.deepEqual(response, {err: {code: grpc.status.INVALID_ARGUMENT}}, "Error should be correct");
 	});
 });

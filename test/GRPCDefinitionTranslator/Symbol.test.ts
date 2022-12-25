@@ -14,13 +14,31 @@ describe("NamespacedSymbol.FromString test", () => {
 		assert.equal(_symbol.namespace[1].name, "bar", "Second namespace should be 'bar'");
 		assert.equal(_symbol.name.name, "baz", "the class name should be 'baz'");
 	});
+	const assembleSample = [
+		"foo.bar.baz",
+		"foo.bar",
+		"foo",
+		"foo..",
+		".foo..",
+		"...",
+		".",
+		"Foo_Bar.__B___az",
+		"",
+	];
+
+	it("Should be able to assemble correctly", () => {
+		for (const sample of assembleSample) {
+			const _symbol = NamespacedSymbol.FromString(sample, SymbolType.Field);
+			assert.equal(_symbol.Assemble(), sample, `Should be able to assemble ${sample}`);
+		}
+	});
 });
 
 
 
 
 describe("GrpcSymbol.Decompose test", () => {
-	const examples = [
+	const simpleExamples = [
 		{name: "FooBarBaz", expected: ["foo", "bar", "baz"]},
 		{name: "æøåÆøåØåæøÅøæ", expected: ["æøå", "æøå", "øåæø", "åøæ"]},
 		{name: "PascalCase", expected: ["pascal", "case"]},
@@ -30,9 +48,26 @@ describe("GrpcSymbol.Decompose test", () => {
 		{name: "InconsistentCasing_example", expected: ["inconsistent", "casing", "example"]},
 		{name: "testingName_CasingTest", expected: ["testing", "name", "casing", "test"]},
 	];
-	it("Should decompose correctly", () => {
-		for (const example of examples) {
-			assert.deepEqual((new GrpcSymbol(example.name, SymbolType.Field)).Decompose(), example.expected);
+
+	const edgeExamples = [
+		{name: "_foo_bar_baz", expected: ["_foo", "bar", "baz"]},
+		{name: "__foo_bar_baz", expected: ["__foo", "bar", "baz"]},
+		{name: "__foo__bar_baz", expected: ["__foo", "_bar", "baz"]},
+		{name: "", expected: []},
+		{name: "a", expected: ["a"]},
+		{name: "A", expected: ["a"]},
+		{name: "_", expected: ["_"]},
+	];
+
+	it("Should decompose simple correctly", () => {
+		for (const example of simpleExamples) {
+			assert.deepEqual((new GrpcSymbol(example.name, SymbolType.Special)).Decompose(), example.expected);
+		}
+	});
+
+	it("Should decompose edge cases correctly", () => {
+		for (const example of edgeExamples) {
+			assert.deepEqual((new GrpcSymbol(example.name, SymbolType.Special)).Decompose(), example.expected);
 		}
 	});
 });
