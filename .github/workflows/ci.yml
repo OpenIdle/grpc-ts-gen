@@ -4,6 +4,7 @@ on:
     branches:
       - main
       - dev
+      - dev-26-add-coveralls
   pull_request:
     branches:
       - main
@@ -44,3 +45,8 @@ jobs:
     - run: npm run build
     - name: "Coverage"
       run: npm run coverage
+    - name: Coveralls
+      uses: coverallsapp/github-action@master
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        path-to-lcov: ./coverage/lcov.info
