@@ -7,7 +7,7 @@
     "build": "npx tsc",
     "test": "npx mocha --enable-source-maps",
     "test-watch": "npx mocha --watch --enable-source-maps",
-    "coverage": "npx nyc npm test",
+    "coverage": "npx nyc --reporter=lcov --report-dir=./coverage  npm test",
     "lint": "npx eslint src/**/*.ts test/**/*.ts"
   },
   "repository": {
