@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package test.data.servicesamples.nested;
+
+message SimpleRequest {
+	string username = 1;
+}
+
+message SimpleResponse {
+	string username = 1;
+}
+
+service SimpleService2 {
+	rpc method1(SimpleRequest) returns (SimpleResponse);
+}

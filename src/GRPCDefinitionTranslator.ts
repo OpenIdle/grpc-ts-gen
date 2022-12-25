@@ -153,14 +153,14 @@ export class MessageDefinition {
 }
 
 export class ServiceMethod {
-	constructor(symbol: GrpcSymbol, inputType: GrpcType, outputType: GrpcType) {
+	constructor(symbol: GrpcSymbol, inputType: GrpcMessageType, outputType: GrpcMessageType) {
 		this.symbol = symbol;
 		this.inputType = inputType;
 		this.outputType = outputType;
 	}
 	symbol: GrpcSymbol;
-	inputType: GrpcType;
-	outputType: GrpcType;
+	inputType: GrpcMessageType;
+	outputType: GrpcMessageType;
 }
 
 export class ServiceDefinition {
@@ -227,17 +227,19 @@ export class ProtoDefinition {
 		for (const service of this.services.values()) {
 			for (const method of service.methods) {
 				if (method.inputType instanceof UnresolvedForwardDependencyType) {
-					method.inputType = this.ResolveForwardDependencyType(method.inputType);
+					method.inputType = this.ResolveForwardDependencyType(method.inputType, "MESSAGE");
 				}
 				if (method.outputType instanceof UnresolvedForwardDependencyType) {
-					method.outputType = this.ResolveForwardDependencyType(method.outputType);
+					method.outputType = this.ResolveForwardDependencyType(method.outputType, "MESSAGE");
 				}
 			}
 		}
 	}
 
-	private ResolveForwardDependencyType(type: UnresolvedForwardDependencyType): GrpcType {
-		const resolvedType = this.ResolveGrpcType(type.namespaces, type.accessString);
+	private ResolveForwardDependencyType(type: UnresolvedForwardDependencyType): GrpcType;
+	private ResolveForwardDependencyType(type: UnresolvedForwardDependencyType, expectedType: "MESSAGE"): GrpcMessageType;
+	private ResolveForwardDependencyType(type: UnresolvedForwardDependencyType, expectedType?: "MESSAGE"): GrpcType {
+		const resolvedType = this.ResolveGrpcType(type.namespaces, type.accessString, expectedType);
 		if (resolvedType instanceof UnresolvedForwardDependencyType) {
 			throw new Error(`Cannot resolve type "${resolvedType.accessString}" from namespace "${ProtoDefinition.NamespacesToString(resolvedType.namespaces)}"`);
 		}
@@ -326,7 +328,9 @@ export class ProtoDefinition {
 		this.messages.set(messageDefinition.symbol.Assemble(), messageDefinition);
 	}
 
-	private ResolveGrpcType(namespaceScope: GrpcSymbol[], accessString: string): GrpcType {
+	private ResolveGrpcType(namespaceScope: GrpcSymbol[], accessString: string): GrpcType;
+	private ResolveGrpcType(namespaceScope: GrpcSymbol[], accessString: string, expectedType?: "MESSAGE"): GrpcMessageType;
+	private ResolveGrpcType(namespaceScope: GrpcSymbol[], accessString: string, expectedType?: GrpcBuiltInTypeStrings): GrpcType {
 		if (GrpcBuiltInTypeSet.has(accessString as GrpcBuiltInTypeStrings)) {
 			return new GrpcType(accessString as GrpcBuiltInTypeStrings);
 		}
@@ -335,22 +339,22 @@ export class ProtoDefinition {
 		while (currentNamespaceStack.length > 0) {
 			const fullName = ProtoDefinition.NamespacesToString(currentNamespaceStack) + "." + accessString;
 			const message = this.messages.get(fullName);
-			if (message)
+			if (message && (expectedType ?? "MESSAGE") == "MESSAGE")
 				return new GrpcMessageType(message.symbol);
 
 			const _enum = this.enums.get(fullName);
-			if (_enum)
+			if (_enum && (expectedType ?? "ENUM") == "ENUM")
 				return new GrpcEnumType(_enum.symbol);
 			
 			currentNamespaceStack.splice(currentNamespaceStack.length-1);
 		}
 
 		const message = this.messages.get(accessString);
-		if (message)
+		if (message && (expectedType ?? "MESSAGE") == "MESSAGE")
 			return new GrpcMessageType(message.symbol);
 		
 		const _enum = this.enums.get(accessString);
-		if (_enum)
+		if (_enum && (expectedType ?? "ENUM") == "ENUM")
 			return new GrpcEnumType(_enum.symbol);
 		
 		return new UnresolvedForwardDependencyType(accessString, namespaceScope);

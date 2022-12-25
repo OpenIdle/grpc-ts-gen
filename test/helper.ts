@@ -55,7 +55,9 @@ export class MockGrpcServerImplementation implements IGrpcServerImplementation {
 		}
 		return await new Promise((resolve) => {
 			handler.impl[handler.methodName]({request: callObject}, (err, response) => {
-				resolve({err: err, response: response});
+				if (err)
+					resolve({err: err});
+				resolve({err: null, response: response});
 			});
 		});
 	}

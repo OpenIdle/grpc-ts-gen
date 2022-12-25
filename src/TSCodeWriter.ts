@@ -175,20 +175,15 @@ export class TSCodeWriter implements ICodeWriter {
 		generator.AddLine("}");
 	}
 
-	private UntransformType(from: string, to: string, generator: ICodeGenerator, type: GrpcType, protoDefinition: ProtoDefinition): void {
-		if (type instanceof GrpcMessageType) {
-			const message = protoDefinition.FindMessage(type.symbol);
-			generator.AddLine(`const ${to} = {`);
-			generator.Indent();
-			for (const field of message.fields) {
-				generator.AddLine(`${JSON.stringify(field.symbol.name)}: ${from}[${JSON.stringify(this._namingTransformer.ConvertSymbol(field.symbol))}],`);
-			}
-			generator.Unindent();
-			generator.AddLine("}");
-		} else {
-			generator.AddLine(`const ${to} = ${from}`);
-
+	private UntransformType(from: string, to: string, generator: ICodeGenerator, type: GrpcMessageType, protoDefinition: ProtoDefinition): void {
+		const message = protoDefinition.FindMessage(type.symbol);
+		generator.AddLine(`const ${to} = {`);
+		generator.Indent();
+		for (const field of message.fields) {
+			generator.AddLine(`${JSON.stringify(field.symbol.name)}: ${from}[${JSON.stringify(this._namingTransformer.ConvertSymbol(field.symbol))}],`);
 		}
+		generator.Unindent();
+		generator.AddLine("}");
 	}
 
 	GetResult(): VirtualDirectory {

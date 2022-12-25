@@ -11,6 +11,8 @@ import { assert } from "chai";
 import { dirname, join } from "path";
 import { mkdirSync, writeFileSync } from "fs";
 import { SymbolType } from "../../src/GRPCDefinitionTranslator";
+import { GrpcResponseError } from "../../src";
+import * as grpc from "@grpc/grpc-js";
 
 describe("DynamicTest", () => {
 	const ServerName = "DynamicTest";
@@ -146,5 +148,21 @@ describe("DynamicTest", () => {
 			"username": "foobarbaz",
 			"anotherString": "lorem ipsum",
 		}, "Response should be correct");
+	});
+
+	it("Should catch errors correctly", async () => {
+		const {DynamicTestServer} = await import("./../../dynamic-test/DynamicTestServer" + "");
+		const mockGrpcServer = new MockGrpcServerImplementation();
+		const testServer = new DynamicTestServer(mockGrpcServer);
+		testServer.AddSimpleService2({
+			method1Procedure: async () => {
+				throw new GrpcResponseError("Some error", grpc.status.INVALID_ARGUMENT);
+			}
+		});
+		const response = await mockGrpcServer.mockCall("/test.data.servicesamples.nested.SimpleService2/method1", {
+			"username": "foobar"
+		});
+
+		assert.deepEqual(response, {err: {code: grpc.status.INVALID_ARGUMENT}}, "Error should be correct");
 	});
 });
