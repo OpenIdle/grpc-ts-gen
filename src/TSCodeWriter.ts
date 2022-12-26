@@ -123,7 +123,7 @@ export class TSCodeWriter implements ICodeWriter {
 			this._definitionWriter.Unindent();
 			this._definitionWriter.AddLine("}");
 			for (const service of protoDefinition.GetServices()) {
-				this._definitionWriter.AddLine(`Add${service.symbol.name.name}(service: ${this.ImportSymbol(service.symbol)}): void {`);
+				this._definitionWriter.AddLine(`Add${service.symbol.namespace.map((sym) => this._namingTransformer.ConvertSymbol(sym)).join("")}${this._namingTransformer.ConvertSymbol(service.symbol.name)}(service: ${this.ImportSymbol(service.symbol)}): void {`);
 				this._definitionWriter.Indent();
 				this._definitionWriter.AddLine(`this._grpcServer.addService<any>(this._packageDefinition[${JSON.stringify(service.symbol.Assemble())}] as protoLoader.ServiceDefinition, {`);
 				this._definitionWriter.Indent();
