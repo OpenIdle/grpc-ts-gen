@@ -74,13 +74,15 @@ export class TSCodeWriter implements ICodeWriter {
 		});
 	}
 
-	WriteServiceInterface(service: ServiceDefinition): void {
+	WriteServiceInterface(service: ServiceDefinition, protoDefinition: ProtoDefinition): void {
 		this._definitionWriter.Group(service.symbol.namespace, () => {
 			this._definitionWriter.DefineInterface(service.symbol.name, () => {
 				for (const method of service.methods) {
 					let parameters: string;
 					if (this._requestBodyAsParameters) {
-						throw new Error("nyi");
+						parameters = "";
+						const message = protoDefinition.FindMessage(method.inputType.symbol);
+						parameters = message.fields.map((messageField) => `${this._namingTransformer.ConvertSymbol(messageField.symbol)}: ${this.GetTSTypeNameAndImport(messageField.type, this._definitionWriter)}`).join(", ");
 					} else {
 						parameters = "request: " + this.GetTSTypeNameAndImport(method.inputType, this._definitionWriter);
 					}
@@ -130,9 +132,13 @@ export class TSCodeWriter implements ICodeWriter {
 				for (const method of service.methods) {
 					this._definitionWriter.AddLine(`${JSON.stringify(method.symbol.name)}: (callObject, callback) => {`);
 					this._definitionWriter.Indent();
-					this.TransformType("callObject.request", "translatedCallObject", this._definitionWriter, method.inputType, protoDefinition);
-	
-					this._definitionWriter.AddLine(`service.${this._namingTransformer.ConvertSymbol(method.symbol)}(translatedCallObject)`);
+					if (this._requestBodyAsParameters) {
+						const message = protoDefinition.FindMessage(method.inputType.symbol);
+						this._definitionWriter.AddLine(`service.${this._namingTransformer.ConvertSymbol(method.symbol)}(${message.fields.map((messageField) => `callObject.request.${messageField.symbol.name}`).join(", ")})`);
+					} else {
+						this.TransformType("callObject.request", "translatedCallObject", this._definitionWriter, method.inputType, protoDefinition);
+						this._definitionWriter.AddLine(`service.${this._namingTransformer.ConvertSymbol(method.symbol)}(translatedCallObject)`);
+					}
 					this._definitionWriter.Indent();
 					this._definitionWriter.AddLine(".then((response) => {");
 					this._definitionWriter.IndentBlock(() => {
