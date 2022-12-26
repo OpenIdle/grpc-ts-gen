@@ -48,7 +48,7 @@ export class TypeGenerator {
 		}
 
 		for (const service of definition.GetServices()) {
-			this._codeWriter.WriteServiceInterface(service);
+			this._codeWriter.WriteServiceInterface(service, definition);
 		}
 		
 		this._codeWriter.WriteServer(definition, protobufJsJSON);

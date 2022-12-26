@@ -13,9 +13,53 @@ import { mkdirSync, writeFileSync } from "fs";
 import { SymbolType } from "../../src/GRPCDefinitionTranslator";
 import { GrpcResponseError } from "../../src";
 import * as grpc from "@grpc/grpc-js";
+import { mkdir } from "fs/promises";
+
+async function CompileTsProgram(path: string, filenames: string[]): Promise<void> {
+	//compile the generated code using the typescript compiler and put the output into dist/dynamic-sample
+	const program = ts.createProgram(filenames.map(x => join(path, x)), {
+		outDir: "dist",
+		target: ts.ScriptTarget.ES2022,
+		module: ts.ModuleKind.CommonJS,
+		rootDir: "./"
+	});
+
+	//The dynamic sample includes will include the helper module directly from the src folder
+	//therefore we need to avoid compiling the files from the src folder aince they should 
+	//be compiled already
+	const emitResult = program.emit(undefined, (fileName, text) => {
+		mkdirSync(dirname(fileName), {recursive: true});
+		if (fileName.startsWith("dist/dynamic-test/")) {
+			writeFileSync(fileName, text, {encoding: "utf8"});
+		}
+	});
+	
+	const allDiagnostic = ts
+		.getPreEmitDiagnostics(program)
+		.concat(emitResult.diagnostics);
+	
+	const errorMessages: string[] = [];
+
+	allDiagnostic.forEach(diagnostic => {
+		if (diagnostic.file) {
+			if (diagnostic.start == null) {
+				errorMessages.push(`${diagnostic.file.fileName}: ${ts.flattenDiagnosticMessageText(diagnostic.messageText, "\n")}`);
+				return;
+			}
+			const { line, character } = ts.getLineAndCharacterOfPosition(diagnostic.file, diagnostic.start);
+			const message = ts.flattenDiagnosticMessageText(diagnostic.messageText, "\n");
+			
+			errorMessages.push(`${diagnostic.file.fileName} (${line + 1},${character + 1}): ${message}`);
+		} else {
+			errorMessages.push(ts.flattenDiagnosticMessageText(diagnostic.messageText, "\n"));
+		}
+	});
+	if (errorMessages.length > 0)
+		assert.fail(errorMessages.join("\n"));
+}
 
 describe("DynamicTest", () => {
-	const ServerName = "DynamicTest";
+
 	before(async function() {
 		this.timeout(20000);
 		const namingTransformer = new MockNamingTransformer((symbol) => {
@@ -35,68 +79,39 @@ describe("DynamicTest", () => {
 			}
 		});
 
-		const codeWriter = new TypeGenerator(new TSCodeWriter(namingTransformer, false, ServerName, "./../src"));
-		const vd = await codeWriter.Create("test/data/dynamicsample/");
-		await vd.WriteVirtualDirectory("dynamic-test/");
-		const filenames = Array.from(vd.GetFlatEntries().keys());
-		
-		//compile the generated code using the typescript compiler and put the output into dist/dynamic-sample
-		const program = ts.createProgram(filenames.map(x => join("dynamic-test", x)), {
-			outDir: "dist",
-			target: ts.ScriptTarget.ES2022,
-			module: ts.ModuleKind.CommonJS,
-			rootDir: "./"
-		});
-		
-		//The dynamic sample includes will include the helper module directly from the src folder
-		//therefore we need to avoid compiling the files from the src folder aince they should 
-		//be compiled already
-		const emitResult = program.emit(undefined, (fileName, text) => {
-			mkdirSync(dirname(fileName), {recursive: true});
-			if (fileName.startsWith("dist/dynamic-test/")) {
-				writeFileSync(fileName, text, {encoding: "utf8"});
-			}
-		});
-		
-		const allDiagnostic = ts
-			.getPreEmitDiagnostics(program)
-			.concat(emitResult.diagnostics);
-		
-		const errorMessages: string[] = [];
+		await mkdir("dynamic-test", {recursive: true});
 
-		allDiagnostic.forEach(diagnostic => {
-			if (diagnostic.file) {
-				if (diagnostic.start == null) {
-					errorMessages.push(`${diagnostic.file.fileName}: ${ts.flattenDiagnosticMessageText(diagnostic.messageText, "\n")}`);
-					return;
-				}
-				const { line, character } = ts.getLineAndCharacterOfPosition(diagnostic.file, diagnostic.start);
-				const message = ts.flattenDiagnosticMessageText(diagnostic.messageText, "\n");
-				
-				errorMessages.push(`${diagnostic.file.fileName} (${line + 1},${character + 1}): ${message}`);
-			} else {
-				errorMessages.push(ts.flattenDiagnosticMessageText(diagnostic.messageText, "\n"));
-			}
-		});
-		if (errorMessages.length > 0)
-			assert.fail(errorMessages.join("\n"));
+		const codeWriter = new TypeGenerator(new TSCodeWriter(namingTransformer, false, "DynamicTestRbao", "./../../src"));
+		const vd = await codeWriter.Create("test/data/dynamicsample/");
+		await vd.WriteVirtualDirectory("dynamic-test/rbao");
+
+		const codeWriterRbap = new TypeGenerator(new TSCodeWriter(namingTransformer, true, "DynamicTestRbap", "./../../src"));
+		const vdRbap = await codeWriterRbap.Create("test/data/dynamicsample/");
+		await vdRbap.WriteVirtualDirectory("dynamic-test/rbap");
+		
+
+		await CompileTsProgram("dynamic-test/rbao", Array.from(vd.GetFlatEntries().keys()));
+		await CompileTsProgram("dynamic-test/rbap", Array.from(vdRbap.GetFlatEntries().keys()));
 	},);
 	it("Should be able to include the generated files", async () => {
 		// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-		await import("./../../dynamic-test/DynamicTestServer" + "");
+		await import("./../../dynamic-test/rbao/DynamicTestRbaoServer" + "");
+		await import("./../../dynamic-test/rbap/DynamicTestRbapServer" + "");
 	});
 
 	it("Should be able to construct server", async () => {
-		const {DynamicTestServer} = await import("./../../dynamic-test/DynamicTestServer" + "");
-		new DynamicTestServer(new MockGrpcServerImplementation());
+		const {DynamicTestRbaoServer} = await import("./../../dynamic-test/rbao/DynamicTestRbaoServer" + "");
+		const {DynamicTestRbapServer} = await import("./../../dynamic-test/rbap/DynamicTestRbapServer" + "");
+		new DynamicTestRbaoServer(new MockGrpcServerImplementation());
+		new DynamicTestRbapServer(new MockGrpcServerImplementation());
 	});
 
 	it("Should be able to add a service", async () => {
-		const {DynamicTestServer} = await import("./../../dynamic-test/DynamicTestServer" + "");
-		const {SimpleEnumEnum} = await import("./../../dynamic-test/testNamespace/dataNamespace/servicesamplesNamespace" + "");
-		const testServer = new DynamicTestServer(new MockGrpcServerImplementation());
+		const {DynamicTestRbaoServer} = await import("./../../dynamic-test/rbao/DynamicTestRbaoServer" + "");
+		const {SimpleEnumEnum} = await import("./../../dynamic-test/rbao/testNamespace/dataNamespace/servicesamplesNamespace" + "");
+		const testServer = new DynamicTestRbaoServer(new MockGrpcServerImplementation());
 		testServer.AddtestNamespacedataNamespaceservicesamplesNamespaceSimpleService({
-			method1: async (request: any) => {
+			method1Procedure: async (request: any) => {
 				return {
 					"someNumber": request.someNumber,
 					"signedNumber": request.signedNumber,
@@ -106,13 +121,26 @@ describe("DynamicTest", () => {
 				};
 			}
 		});
+		const {DynamicTestRbapServer} = await import("./../../dynamic-test/rbap/DynamicTestRbapServer" + "");
+		const testServer2 = new DynamicTestRbapServer(new MockGrpcServerImplementation());
+		testServer2.AddtestNamespacedataNamespaceservicesamplesNamespaceSimpleService({
+			method1Procedure: async (anotherString: string, signedNumber: number, someEnum: typeof SimpleEnumEnum, someNumber: number, username: string) => {
+				return {
+					"someNumber": someNumber,
+					"signedNumber": signedNumber,
+					"username": username,
+					"anotherString": anotherString,
+					"someEnumField": someEnum
+				};
+			}
+		});
 	});
 
 	it("Should be able to use a service", async () => {
-		const {DynamicTestServer} = await import("./../../dynamic-test/DynamicTestServer" + "");
-		const {SimpleEnumEnum} = await import("./../../dynamic-test/testNamespace/dataNamespace/servicesamplesNamespace" + "");
+		const {DynamicTestRbaoServer} = await import("./../../dynamic-test/rbao/DynamicTestRbaoServer" + "");
+		const {SimpleEnumEnum} = await import("./../../dynamic-test/rbao/testNamespace/dataNamespace/servicesamplesNamespace" + "");
 		const mockGrpcServer = new MockGrpcServerImplementation();
-		const testServer = new DynamicTestServer(mockGrpcServer);
+		const testServer = new DynamicTestRbaoServer(mockGrpcServer);
 		let receivedRequestObject = {};
 		testServer.AddtestNamespacedataNamespaceservicesamplesNamespaceSimpleService({
 			method1Procedure: async (request: any) => {
@@ -150,10 +178,46 @@ describe("DynamicTest", () => {
 		}, "Response should be correct");
 	});
 
-	it("Should catch errors correctly", async () => {
-		const {DynamicTestServer} = await import("./../../dynamic-test/DynamicTestServer" + "");
+	it("Should be able to use request object as parameter server", async () => {
+		const {DynamicTestRbapServer} = await import("./../../dynamic-test/rbap/DynamicTestRbapServer" + "");
+		const {SimpleEnumEnum} = await import("./../../dynamic-test/rbao/testNamespace/dataNamespace/servicesamplesNamespace" + "");
 		const mockGrpcServer = new MockGrpcServerImplementation();
-		const testServer = new DynamicTestServer(mockGrpcServer);
+		const testServer = new DynamicTestRbapServer(mockGrpcServer);
+		let receivedRequestValues: any[] = [];
+		testServer.AddtestNamespacedataNamespaceservicesamplesNamespaceSimpleService({
+			method1Procedure: async (anotherString: string, signedNumber: number, someEnum: typeof SimpleEnumEnum, someNumber: number, username: string) => {
+				receivedRequestValues = [anotherString, signedNumber, someEnum, someNumber, username];
+				return {
+					"someNumberField": someNumber + 1,
+					"signedNumberField": signedNumber + 1,
+					"usernameField": username + "baz",
+					"anotherStringField": anotherString + " ipsum"
+				};
+			}
+		});
+
+		const response = await mockGrpcServer.mockCall("/test.data.servicesamples.SimpleService/method1", {
+			"someNumber": 42,
+			"signedNumber": 54,
+			"username": "foobar",
+			"anotherString": "lorem",
+			"someEnum": SimpleEnumEnum.VALUE323
+		});
+
+		assert.deepEqual(receivedRequestValues, ["lorem", 54, SimpleEnumEnum.VALUE323, 42, "foobar"]);
+
+		assert.deepEqual(response.response, {
+			"someNumber": 43,
+			"signedNumber": 55,
+			"username": "foobarbaz",
+			"anotherString": "lorem ipsum",
+		}, "Response should be correct");
+	});
+
+	it("Should catch errors correctly", async () => {
+		const {DynamicTestRbaoServer} = await import("./../../dynamic-test/rbao/DynamicTestRbaoServer" + "");
+		const mockGrpcServer = new MockGrpcServerImplementation();
+		const testServer = new DynamicTestRbaoServer(mockGrpcServer);
 		testServer.AddtestNamespacedataNamespaceservicesamplesNamespacenestedNamespaceSimpleService2({
 			method1Procedure: async () => {
 				throw new GrpcResponseError("Some error", grpc.status.INVALID_ARGUMENT);
