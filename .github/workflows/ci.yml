@@ -20,8 +20,13 @@ jobs:
     - run: npm install
     - name: "Build"
       run: npm run build
-    - name: "Tests"
-      run: npm test
+    - name: "Test and coverage"
+      run: npm run coverage
+    - name: Coveralls
+      uses: coverallsapp/github-action@master
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        path-to-lcov: ./coverage/lcov.info
   lint:
     name: "Lint"
     runs-on: ubuntu-latest
@@ -32,20 +37,3 @@ jobs:
         node-version: 18
     - run: npm install
     - run: npm run lint
-  coverage:
-    name: "Coverage"
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v3
-    - uses: actions/setup-node@v3
-      with:
-        node-version: 18
-    - run: npm install
-    - run: npm run build
-    - name: "Coverage"
-      run: npm run coverage
-    - name: Coveralls
-      uses: coverallsapp/github-action@master
-      with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
-        path-to-lcov: ./coverage/lcov.info
