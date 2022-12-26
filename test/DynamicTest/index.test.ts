@@ -95,7 +95,7 @@ describe("DynamicTest", () => {
 		const {DynamicTestServer} = await import("./../../dynamic-test/DynamicTestServer" + "");
 		const {SimpleEnumEnum} = await import("./../../dynamic-test/testNamespace/dataNamespace/servicesamplesNamespace" + "");
 		const testServer = new DynamicTestServer(new MockGrpcServerImplementation());
-		testServer.AddSimpleService({
+		testServer.AddtestNamespacedataNamespaceservicesamplesNamespaceSimpleService({
 			method1: async (request: any) => {
 				return {
 					"someNumber": request.someNumber,
@@ -114,7 +114,7 @@ describe("DynamicTest", () => {
 		const mockGrpcServer = new MockGrpcServerImplementation();
 		const testServer = new DynamicTestServer(mockGrpcServer);
 		let receivedRequestObject = {};
-		testServer.AddSimpleService({
+		testServer.AddtestNamespacedataNamespaceservicesamplesNamespaceSimpleService({
 			method1Procedure: async (request: any) => {
 				receivedRequestObject = request;
 				return {
@@ -154,7 +154,7 @@ describe("DynamicTest", () => {
 		const {DynamicTestServer} = await import("./../../dynamic-test/DynamicTestServer" + "");
 		const mockGrpcServer = new MockGrpcServerImplementation();
 		const testServer = new DynamicTestServer(mockGrpcServer);
-		testServer.AddSimpleService2({
+		testServer.AddtestNamespacedataNamespaceservicesamplesNamespacenestedNamespaceSimpleService2({
 			method1Procedure: async () => {
 				throw new GrpcResponseError("Some error", grpc.status.INVALID_ARGUMENT);
 			}
