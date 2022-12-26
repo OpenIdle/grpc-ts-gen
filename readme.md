@@ -1,7 +1,7 @@
 # grpc-ts-gen
 ![npm](https://img.shields.io/npm/v/grpc-ts-gen)
 ![npm downloads](https://img.shields.io/npm/dm/grpc-ts-gen) 
-[![Coverage Status](https://coveralls.io/repos/github/OpenIdle/grpc-ts-gen/badge.svg)](https://coveralls.io/github/OpenIdle/grpc-ts-gen)
+[![Coverage Status](https://coveralls.io/repos/github/OpenIdle/grpc-ts-gen/badge.svg?branch=main)](https://coveralls.io/github/OpenIdle/grpc-ts-gen?branch=main)
 
 `grpc-ts-gen` is a tool for generating a typed grpc server and client from protobuf descriptors.
 
