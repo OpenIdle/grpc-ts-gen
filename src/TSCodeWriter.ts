@@ -29,6 +29,14 @@ export class TSCodeWriter implements ICodeWriter {
 		this._grpcTsGenModulePath = grpcTsGenModulePath;
 	}
 
+	private GetOneofType(type: GrpcOneofType, codeGenerator: IModuleCodeGenerator): string {
+		return "{" + Object.entries(type.definition)
+			.map(([name, type]) => {
+				return `${this._namingTransformer.ConvertSymbol(new GrpcSymbol(name, SymbolType.Field))}: ${this.GetTSTypeNameAndImport(type, codeGenerator)};`;
+			})
+			.join("") + "}";
+	}
+
 	private GetTSTypeNameAndImport(type: GrpcType, codeGenerator: IModuleCodeGenerator): string {
 		if (type instanceof GrpcEnumType || type instanceof GrpcMessageType) {
 			const importName = `IMPORT_${type.symbol.namespace.map(x => x.name).join("_")}_${type.symbol.name.name}`;
@@ -36,9 +44,7 @@ export class TSCodeWriter implements ICodeWriter {
 			return importName;
 		}
 		if (type instanceof GrpcOneofType) {
-			return Object.values(type.definition)
-				.map(x => this.GetTSTypeNameAndImport(x, codeGenerator))
-				.join(" | ") + " | null";
+			return this.GetOneofType(type, codeGenerator);
 		}
 		switch (type.type) {
 			case "string":
@@ -134,15 +140,25 @@ export class TSCodeWriter implements ICodeWriter {
 					this._definitionWriter.Indent();
 					if (this._requestBodyAsParameters) {
 						const message = protoDefinition.FindMessage(method.inputType.symbol);
-						this._definitionWriter.AddLine(`service.${this._namingTransformer.ConvertSymbol(method.symbol)}(${message.fields.map((messageField) => `callObject.request.${messageField.symbol.name}`).join(", ")})`);
+						this._definitionWriter.AddLine(`service.${this._namingTransformer.ConvertSymbol(method.symbol)}(`);
+						this._definitionWriter.Indent();
+						for (const field of message.fields) {
+							if (field.type instanceof GrpcMessageType || field.type instanceof GrpcOneofType) {
+								this.TransformType(`callObject.request[${JSON.stringify(field.symbol.name)}]`, null, this._definitionWriter, field.type, protoDefinition, "forward");
+							} else {
+								this._definitionWriter.AddLine(`callObject.request[${JSON.stringify(field.symbol.name)}],`);
+							}
+						}
+						this._definitionWriter.Unindent();
+						this._definitionWriter.AddLine(")");
 					} else {
-						this.TransformType("callObject.request", "translatedCallObject", this._definitionWriter, method.inputType, protoDefinition);
+						this.TransformType("callObject.request", "translatedCallObject", this._definitionWriter, method.inputType, protoDefinition, "forward");
 						this._definitionWriter.AddLine(`service.${this._namingTransformer.ConvertSymbol(method.symbol)}(translatedCallObject)`);
 					}
 					this._definitionWriter.Indent();
 					this._definitionWriter.AddLine(".then((response) => {");
 					this._definitionWriter.IndentBlock(() => {
-						this.UntransformType("response", "translatedResponse", this._definitionWriter, method.outputType, protoDefinition);
+						this.TransformType("response", "translatedResponse", this._definitionWriter, method.outputType, protoDefinition, "reverse");
 						this._definitionWriter.AddLine("callback(null, translatedResponse);");
 					});
 					this._definitionWriter.AddLine("})");
@@ -169,27 +185,76 @@ export class TSCodeWriter implements ICodeWriter {
 			this._definitionWriter.AddLine("}");
 		});
 	}
-
-	private TransformType(from: string, to: string, generator: ICodeGenerator, type: GrpcMessageType, protoDefinition: ProtoDefinition): void {
-		const message = protoDefinition.FindMessage(type.symbol);
-		generator.AddLine(`const ${to} = {`);
-		generator.Indent();
-		for (const field of message.fields) {
-			generator.AddLine(`${JSON.stringify(this._namingTransformer.ConvertSymbol(field.symbol))}: ${from}[${JSON.stringify(field.symbol.name)}],`);
+	
+	private TransformType(from: string, to: string | null, generator: ICodeGenerator, type: GrpcMessageType | GrpcOneofType, protoDefinition: ProtoDefinition, conversion: "reverse" | "forward"): void {
+		if (to != null) {
+			generator.AddLine(`const ${to} = {`);
+		} else {
+			generator.AddLine("{");
 		}
+		generator.Indent();
+		if (type instanceof GrpcMessageType) {
+			this.TransformTypeInternal(from, generator, type, protoDefinition, conversion);
+		} else if (type instanceof GrpcOneofType) {
+			this.TransformOneofTypeInternal(from, generator, type, protoDefinition, conversion);
+		} 
 		generator.Unindent();
-		generator.AddLine("}");
+		if (to != null) {
+			generator.AddLine("};");
+		} else {
+			generator.AddLine("},");
+		}
 	}
 
-	private UntransformType(from: string, to: string, generator: ICodeGenerator, type: GrpcMessageType, protoDefinition: ProtoDefinition): void {
+	private TransformTypeInternal(from: string, generator: ICodeGenerator, type: GrpcMessageType, protoDefinition: ProtoDefinition, conversion: "reverse" | "forward"): void {
 		const message = protoDefinition.FindMessage(type.symbol);
-		generator.AddLine(`const ${to} = {`);
-		generator.Indent();
+
 		for (const field of message.fields) {
-			generator.AddLine(`${JSON.stringify(field.symbol.name)}: ${from}[${JSON.stringify(this._namingTransformer.ConvertSymbol(field.symbol))}],`);
+			const fieldToSet = conversion == "forward" ?
+				JSON.stringify(this._namingTransformer.ConvertSymbol(field.symbol)) : 
+				JSON.stringify(field.symbol.name);
+			const fieldToGet = conversion == "forward" ?
+				`${from}[${JSON.stringify(field.symbol.name)}]` :
+				`${from}[${JSON.stringify(this._namingTransformer.ConvertSymbol(field.symbol))}]`;
+
+			if (field.type instanceof GrpcMessageType) {
+				generator.AddLine(`${fieldToSet}: {`);
+				generator.Indent();
+				this.TransformTypeInternal(fieldToGet, generator, field.type, protoDefinition, conversion);
+				generator.Unindent();
+				generator.AddLine("},");
+			} else if (field.type instanceof GrpcOneofType) {
+				generator.AddLine(`${fieldToSet}: {`);
+				generator.Indent();
+				this.TransformOneofTypeInternal(fieldToGet, generator, field.type, protoDefinition, conversion);
+				generator.Unindent();
+				generator.AddLine("},");
+			} else {
+				generator.AddLine(`${fieldToSet}: ${fieldToGet},`);
+			}
 		}
-		generator.Unindent();
-		generator.AddLine("}");
+	}
+
+	private TransformOneofTypeInternal(from: string, generator: ICodeGenerator, type: GrpcOneofType, protoDefinition: ProtoDefinition, conversion: "forward" | "reverse"): void {
+		for (const [fieldName, fieldType] of Object.entries(type.definition)) {
+			const fieldToSet = conversion == "forward" ?
+				JSON.stringify(this._namingTransformer.ConvertSymbol(new GrpcSymbol(fieldName, SymbolType.Field))) :
+				JSON.stringify(fieldName);
+			const fieldToGet = conversion == "forward" ?
+				`${from}[${JSON.stringify(fieldName)}]` :
+				`${from}[${JSON.stringify(this._namingTransformer.ConvertSymbol(new GrpcSymbol(fieldName, SymbolType.Field)))}]`;
+			if (fieldType instanceof GrpcMessageType) {
+				generator.AddLine(`${fieldToSet}: {`);
+				generator.Indent();
+				this.TransformTypeInternal(fieldToGet, generator, fieldType, protoDefinition, conversion);
+				generator.Unindent();
+				generator.AddLine("},");
+			} else if (fieldType instanceof GrpcOneofType) {
+				throw new Error("Oneof type cannot be contained in a oneof field");
+			} else {
+				generator.AddLine(`${fieldToSet}: ${fieldToGet},`);
+			}
+		}
 	}
 
 	GetResult(): VirtualDirectory {
