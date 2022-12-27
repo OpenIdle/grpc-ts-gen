@@ -229,4 +229,144 @@ describe("DynamicTest", () => {
 
 		assert.deepEqual(response, {err: {code: grpc.status.INVALID_ARGUMENT}}, "Error should be correct");
 	});
+
+	it("Should be able to use oneof fields", async () => {
+		const {DynamicTestRbaoServer} = await import("./../../dynamic-test/rbao/DynamicTestRbaoServer" + "");
+		const {SimpleEnumEnum} = await import("./../../dynamic-test/rbao/testNamespace/dataNamespace/servicesamplesNamespace" + "");
+		const mockGrpcServer = new MockGrpcServerImplementation();
+		const testServer = new DynamicTestRbaoServer(mockGrpcServer);
+		let receivedRequestValues: any = {};
+		testServer.AddtestNamespacedataNamespaceservicesamplesNamespaceSimpleService({
+			method2Procedure: async (obj: any) => {
+				receivedRequestValues = obj;
+				return {
+					oneofFieldField: {
+						simpleResponseField: {
+							usernameField: "foo",
+							someNumberField: 123,
+							signedNumberField: 34,
+							anotherStringField: "anotherfoo"
+						}
+					}
+				};
+			}
+		});
+
+		const response = await mockGrpcServer.mockCall("/test.data.servicesamples.SimpleService/method2", {
+			oneofField: {
+				name: undefined,
+				num: undefined,
+				simpleRequest: {
+					username: "foobar",
+					someNumber: 3,
+					signedNumber: 45,
+					anotherString: "barbaz",
+					someEnum: SimpleEnumEnum.VALUE323
+				}
+			},
+			nestedMessage: {
+				hello: "bar"
+			}
+		});
+
+		assert.deepEqual(receivedRequestValues, {
+			oneofFieldField: {
+				nameField: undefined,
+				numField: undefined,
+				simpleRequestField: {
+					usernameField: "foobar",
+					someNumberField: 3,
+					signedNumberField: 45,
+					anotherStringField: "barbaz",
+					someEnumField: SimpleEnumEnum.VALUE323
+				}
+			},
+			nestedMessageField: {
+				helloField: "bar",
+			}
+		});
+
+		assert.deepEqual(response.response, {
+			oneofField: {
+				bob: undefined,
+				bobother: undefined,
+				simpleResponse: {
+					username: "foo",
+					someNumber: 123,
+					signedNumber: 34,
+					anotherString: "anotherfoo"
+				}
+			}
+		}, "Response should be correct");
+	});
+
+	it("Should be able to use oneof fields with request body as parameters", async () => {
+		const {DynamicTestRbapServer} = await import("./../../dynamic-test/rbap/DynamicTestRbapServer" + "");
+		const {SimpleEnumEnum} = await import("./../../dynamic-test/rbap/testNamespace/dataNamespace/servicesamplesNamespace" + "");
+		const mockGrpcServer = new MockGrpcServerImplementation();
+		const testServer = new DynamicTestRbapServer(mockGrpcServer);
+		let receivedRequestValues: any = [];
+		testServer.AddtestNamespacedataNamespaceservicesamplesNamespaceSimpleService({
+			method2Procedure: async (...args: any[]) => {
+				receivedRequestValues = args;
+				return {
+					oneofFieldField: {
+						simpleResponseField: {
+							usernameField: "foo",
+							someNumberField: 123,
+							signedNumberField: 34,
+							anotherStringField: "anotherfoo"
+						}
+					}
+				};
+			}
+		});
+
+		const response = await mockGrpcServer.mockCall("/test.data.servicesamples.SimpleService/method2", {
+			nestedMessage: {
+				hello: "bar"
+			},
+			oneofField: {
+				name: undefined,
+				num: undefined,
+				simpleRequest: {
+					username: "foobar",
+					someNumber: 3,
+					signedNumber: 45,
+					anotherString: "barbaz",
+					someEnum: SimpleEnumEnum.VALUE323
+				}
+			}
+		});
+
+		assert.deepEqual(receivedRequestValues, [
+			{
+				helloField: "bar"
+			},
+			{
+				nameField: undefined,
+				numField: undefined,
+				simpleRequestField: {
+					usernameField: "foobar",
+					someNumberField: 3,
+					signedNumberField: 45,
+					anotherStringField: "barbaz",
+					someEnumField: SimpleEnumEnum.VALUE323
+				}
+			}
+		]);
+
+		assert.deepEqual(response.response, {
+			oneofField: {
+				bob: undefined,
+				bobother: undefined,
+				simpleResponse: {
+					username: "foo",
+					someNumber: 123,
+					signedNumber: 34,
+					anotherString: "anotherfoo"
+				}
+			}
+		}, "Response should be correct");
+	});
 });

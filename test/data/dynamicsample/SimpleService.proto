@@ -23,15 +23,28 @@ message SimpleResponse {
 	string anotherString = 4;
 }
 
+message NestedMessage {
+	string hello = 1;
+}
+
 message DifferentRequest {
 	oneof oneofField {
 		string name = 1;
 		int32 num = 2;
 		SimpleRequest simpleRequest = 3;
 	}
+	NestedMessage nestedMessage = 4;
+}
+
+message DifferentResponse {
+	oneof oneofField {
+		string bob = 1;
+		int32 bobother = 2;
+		SimpleResponse simpleResponse = 3;
+	}
 }
 
 service SimpleService {
 	rpc method1(SimpleRequest) returns (SimpleResponse);
-	rpc method2(DifferentRequest) returns (SimpleResponse);
+	rpc method2(DifferentRequest) returns (DifferentResponse);
 }
