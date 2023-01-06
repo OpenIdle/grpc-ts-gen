@@ -1,5 +1,5 @@
 import { mkdir, writeFile } from "fs/promises";
-import { join } from "path";
+import { join } from "path/posix";
 
 export class VirtualDirectory {
 	private entries: Map<string, string | VirtualDirectory>;
@@ -38,15 +38,24 @@ export class VirtualDirectory {
 		return this.entries.entries();
 	}
 
+	GetEntryMap(): Map<string, string | VirtualDirectory> {
+		return new Map(this.entries);
+	}
+
 	async WriteVirtualDirectory(outDirectory: string): Promise<void> {
 		try {
 			await mkdir(outDirectory);
 		}
 		catch (e) {
-			if (!(e != null && typeof(e) == "object" && ("errno" in e) && (e as {"errno": number}).errno == -17)) {
-				throw e;
+			if (e instanceof Error && typeof((e as unknown as Record<string,unknown>)["code"]) == "string") {
+				const casted: NodeJS.ErrnoException = e;
+
+				if (casted.code != "EEXIST") {
+					throw e;
+				}
 			}
 		}
+		
 		const promises: Array<Promise<void>> = [];
 		for (const [filename, entry] of this.entries) {
 			if (typeof(entry) == "string") {

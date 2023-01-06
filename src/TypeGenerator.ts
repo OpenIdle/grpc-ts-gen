@@ -1,5 +1,5 @@
 import { readdir, stat } from "fs/promises";
-import { extname, join, relative } from "path";
+import { extname, join, relative } from "path/posix";
 import protobuf from "protobufjs";
 import { ProtoDefinition } from "./GRPCDefinitionTranslator";
 import { ICodeWriter } from "./ICodeWriter";
