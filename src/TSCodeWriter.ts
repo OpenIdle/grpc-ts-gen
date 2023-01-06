@@ -32,7 +32,7 @@ export class TSCodeWriter implements ICodeWriter {
 	private GetOneofType(type: GrpcOneofType, codeGenerator: IModuleCodeGenerator): string {
 		return "{" + Object.entries(type.definition)
 			.map(([name, type]) => {
-				return `${this._namingTransformer.ConvertSymbol(new GrpcSymbol(name, SymbolType.Field))}: ${this.GetTSTypeNameAndImport(type, codeGenerator)};`;
+				return `${this._namingTransformer.ConvertSymbol(new GrpcSymbol(name, SymbolType.Field))}?: ${this.GetTSTypeNameAndImport(type, codeGenerator)};`;
 			})
 			.join("") + "}";
 	}
@@ -224,11 +224,11 @@ export class TSCodeWriter implements ICodeWriter {
 				generator.Unindent();
 				generator.AddLine("},");
 			} else if (field.type instanceof GrpcOneofType) {
-				generator.AddLine(`${fieldToSet}: {`);
+				generator.AddLine(`${fieldToSet}: ({`);
 				generator.Indent();
 				this.TransformOneofTypeInternal(fieldToGet, generator, field.type, protoDefinition, conversion);
 				generator.Unindent();
-				generator.AddLine("},");
+				generator.AddLine("}),");
 			} else {
 				generator.AddLine(`${fieldToSet}: ${fieldToGet},`);
 			}
@@ -244,15 +244,15 @@ export class TSCodeWriter implements ICodeWriter {
 				`${from}[${JSON.stringify(fieldName)}]` :
 				`${from}[${JSON.stringify(this._namingTransformer.ConvertSymbol(new GrpcSymbol(fieldName, SymbolType.Field)))}]`;
 			if (fieldType instanceof GrpcMessageType) {
-				generator.AddLine(`${fieldToSet}: {`);
+				generator.AddLine(`${fieldToSet}: (${fieldToGet} != undefined) ? {`);
 				generator.Indent();
 				this.TransformTypeInternal(fieldToGet, generator, fieldType, protoDefinition, conversion);
 				generator.Unindent();
-				generator.AddLine("},");
+				generator.AddLine("} : undefined,");
 			} else if (fieldType instanceof GrpcOneofType) {
 				throw new Error("Oneof type cannot be contained in a oneof field");
 			} else {
-				generator.AddLine(`${fieldToSet}: ${fieldToGet},`);
+				generator.AddLine(`${fieldToSet}: (${fieldToGet} != undefined) ? ${fieldToGet} : undefined,`);
 			}
 		}
 	}
