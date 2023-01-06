@@ -47,15 +47,19 @@ export class VirtualDirectory {
 			await mkdir(outDirectory);
 		}
 		catch (e) {
-			if (e instanceof Error && typeof((e as unknown as Record<string,unknown>)["code"]) == "string") {
-				const casted: NodeJS.ErrnoException = e;
+			if (
+				!(e instanceof Error) || 
+				typeof((e as unknown as Record<string,unknown>)["code"]) != "string"
+			) {
+				throw e;
+			}
+			const casted: NodeJS.ErrnoException = e;
 
-				if (casted.code != "EEXIST") {
-					throw e;
-				}
+			if (casted.code != "EEXIST") {
+				throw e;
 			}
 		}
-		
+
 		const promises: Array<Promise<void>> = [];
 		for (const [filename, entry] of this.entries) {
 			if (typeof(entry) == "string") {
