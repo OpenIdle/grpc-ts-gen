@@ -1,4 +1,5 @@
 import { assert } from "chai";
+import { readFile, stat } from "fs/promises";
 import { VirtualDirectory } from "../src/VirtualDirectory";
 
 describe("VirtualDirectory test", () => {
@@ -64,5 +65,35 @@ describe("VirtualDirectory test", () => {
 		assert.deepEqual(flatEntries.get("foo/bar.ab"), "hello1", "foo/bar.ab should contain hello1");
 		assert.deepEqual(flatEntries.get("foo/baz.cd"), "hello2", "foo/baz.cd should contain hello2");
 		assert.deepEqual(flatEntries.get("qux/bar.ab"), "hello3", "qux/bar.ab should contain hello3");
+	});
+
+	it("Should write files and directories correctly", async () => {
+		const vd = new VirtualDirectory();
+		vd.AddDeepEntry(["foo", "bar.ab"], "hello1");
+		vd.AddDeepEntry(["foo", "baz.cd"], "hello2");
+		vd.AddDeepEntry(["qux", "bar.ab"], "hello3");
+		await vd.WriteVirtualDirectory("dynamic-test/vd");
+
+		assert.isTrue((await stat("dynamic-test/vd/foo")).isDirectory());
+		assert.isTrue((await stat("dynamic-test/vd/qux")).isDirectory());
+		
+		assert.equal((await readFile("dynamic-test/vd/foo/bar.ab")).toString(), "hello1");
+		assert.equal((await readFile("dynamic-test/vd/foo/baz.cd")).toString(), "hello2");
+		assert.equal((await readFile("dynamic-test/vd/qux/bar.ab")).toString(), "hello3");
+
+		//Should be able to overwrite it without errors
+
+		const vd2 = new VirtualDirectory();
+		vd2.AddDeepEntry(["foo", "bar.ab"], "hello4");
+		vd2.AddDeepEntry(["foo", "baz.cd"], "hello5");
+		vd2.AddDeepEntry(["qux", "bar.ab"], "hello6");
+		await vd2.WriteVirtualDirectory("dynamic-test/vd");
+
+		assert.isTrue((await stat("dynamic-test/vd/foo")).isDirectory());
+		assert.isTrue((await stat("dynamic-test/vd/qux")).isDirectory());
+		
+		assert.equal((await readFile("dynamic-test/vd/foo/bar.ab")).toString(), "hello4");
+		assert.equal((await readFile("dynamic-test/vd/foo/baz.cd")).toString(), "hello5");
+		assert.equal((await readFile("dynamic-test/vd/qux/bar.ab")).toString(), "hello6");
 	});
 });
