@@ -1,5 +1,5 @@
 import { ServiceDefinition } from "@grpc/proto-loader";
-import { join } from "path";
+import { join } from "path/posix";
 import protobuf from "protobufjs";
 import { IGrpcServerImplementation, Implementation } from "../src";
 import { GrpcSymbol, ProtoDefinition } from "../src/GRPCDefinitionTranslator";

@@ -1,4 +1,4 @@
-import path from "path";
+import path from "path/posix";
 import CodeGenerator from "./CodeGenerator";
 import { GrpcSymbol, NamespacedSymbol, SymbolType } from "./GRPCDefinitionTranslator";
 import { ICodeGenerator } from "./ICodeGenerator";

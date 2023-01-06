@@ -8,7 +8,7 @@ import { TypeGenerator } from "../../src/TypeGenerator";
 import { MockGrpcServerImplementation, MockNamingTransformer } from "../helper";
 import * as ts from "typescript";
 import { assert } from "chai";
-import { dirname, join } from "path";
+import { dirname, join } from "path/posix";
 import { mkdirSync, writeFileSync } from "fs";
 import { SymbolType } from "../../src/GRPCDefinitionTranslator";
 import { GrpcResponseError } from "../../src";
