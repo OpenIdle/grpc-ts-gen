@@ -247,7 +247,7 @@ describe("DynamicTest", () => {
 							signedNumberField: 34,
 							anotherStringField: "anotherfoo"
 						}
-					}
+					},
 				};
 			}
 		});
@@ -283,7 +283,8 @@ describe("DynamicTest", () => {
 			},
 			nestedMessageField: {
 				helloField: "bar",
-			}
+			},
+			optionalFieldField: undefined
 		});
 
 		assert.deepEqual(response.response, {
@@ -296,7 +297,8 @@ describe("DynamicTest", () => {
 					signedNumber: 34,
 					anotherString: "anotherfoo"
 				}
-			}
+			},
+			optionalField: undefined
 		}, "Response should be correct");
 	});
 
@@ -317,7 +319,8 @@ describe("DynamicTest", () => {
 							signedNumberField: 34,
 							anotherStringField: "anotherfoo"
 						}
-					}
+					},
+					optionalFieldField: "hello"
 				};
 			}
 		});
@@ -353,7 +356,8 @@ describe("DynamicTest", () => {
 					anotherStringField: "barbaz",
 					someEnumField: SimpleEnumEnum.VALUE323
 				}
-			}
+			},
+			undefined
 		]);
 
 		assert.deepEqual(response.response, {
@@ -366,7 +370,39 @@ describe("DynamicTest", () => {
 					signedNumber: 34,
 					anotherString: "anotherfoo"
 				}
-			}
+			},
+			optionalField: "hello"
 		}, "Response should be correct");
+	});
+
+	it("Optional fields should be correct", async () => {
+		const {DynamicTestRbapServer} = await import("./../../dynamic-test/rbap/DynamicTestRbapServer" + "");
+		const mockGrpcServer = new MockGrpcServerImplementation();
+		const testServer = new DynamicTestRbapServer(mockGrpcServer);
+		let receivedRequestValues: any[] = [];
+		testServer.AddtestNamespacedataNamespaceservicesamplesNamespaceSimpleService({
+			method3Procedure: async (...args: any[]) => {
+				receivedRequestValues = args;
+				return {
+					helloField: "hello",
+					bobField: "ok"
+				};
+			}
+		});
+
+		const response = await mockGrpcServer.mockCall("/test.data.servicesamples.SimpleService/method3", {
+			hello: "hello",
+			bob: "ok"
+		});
+		
+		assert.deepEqual(response.response, {
+			hello: "hello",
+			bob: "ok"
+		});
+
+		assert.deepEqual(receivedRequestValues, [
+			"ok",
+			"hello"
+		]);
 	});
 });

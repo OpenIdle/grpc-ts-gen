@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+package test.data.messagesamples;
+
+message OptionalContainer {
+	optional string testField = 1;
+	oneof testField2 {
+		string option = 2;
+	}
+}

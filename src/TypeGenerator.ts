@@ -31,13 +31,14 @@ export class TypeGenerator {
 		const files = (await GatherAllProtoFiles(protoBasePath)).map(path => relative(protoBasePath, path));
 
 		const root = new protobuf.Root();
+
 		root.resolvePath = (origin, target) => {
 			return join(protoBasePath, target);
 		};
 		
-		const protobufJsJSON = await protobuf.load(files, root);
+		await root.load(files, {keepCase: true});
 		
-		const definition = ProtoDefinition.FromPbjs(protobufJsJSON);
+		const definition = ProtoDefinition.FromPbjs(root);
 
 		for (const message of definition.GetMessages()) {
 			this._codeWriter.WriteMessageInterface(message);
@@ -51,7 +52,7 @@ export class TypeGenerator {
 			this._codeWriter.WriteServiceInterface(service, definition);
 		}
 		
-		this._codeWriter.WriteServer(definition, protobufJsJSON);
+		this._codeWriter.WriteServer(definition, root);
 
 		return this._codeWriter.GetResult();
 	}

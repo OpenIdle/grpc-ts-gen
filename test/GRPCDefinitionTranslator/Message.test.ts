@@ -41,6 +41,23 @@ const ExpectedOneofMessage = new MessageDefinition(
 	]
 );
 
+const ExpectedOptionalMessage = new MessageDefinition(
+	NamespacedSymbol.FromString("test.data.messagesamples.OptionalContainer", SymbolType.Message),
+	[
+		new MessageField(
+			new GrpcSymbol("testField", SymbolType.Field), 
+			new GrpcType("string"),
+			true
+		),
+		new MessageField(
+			new GrpcSymbol("testField2", SymbolType.Field),
+			new GrpcOneofType({
+				option: new GrpcType("string")
+			})
+		)
+	]
+);
+
 describe("GRPCDefintionTranslator message test", () => {
 	it("Should convert message with only built in types correctly", async () => {
 		const data = await loadFromPbjsDefinition("messagesamples/SimpleMessage.proto");
@@ -95,5 +112,13 @@ describe("GRPCDefintionTranslator message test", () => {
 
 		assert.exists(targetMessage, "Exepcted to find AdvancedMessage");
 		assert.deepEqual(targetMessage, ExpectedAdvancedMessage);
+	});
+
+	it("Should convert oneof fields correctly", async () => {
+		const data = await loadFromPbjsDefinition("messagesamples/OptionalField.proto");
+
+		const message = data.FindMessage(NamespacedSymbol.FromString("test.data.messagesamples.OptionalContainer", SymbolType.Message));
+
+		assert.deepEqual(message, ExpectedOptionalMessage);
 	});
 });

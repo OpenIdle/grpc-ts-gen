@@ -135,12 +135,14 @@ class UnresolvedForwardDependencyType extends GrpcType {
 }
 
 export class MessageField {
-	constructor(symbol: GrpcSymbol, type: GrpcType) {
+	constructor(symbol: GrpcSymbol, type: GrpcType, optional?: boolean) {
 		this.symbol = symbol;
 		this.type = type;
+		this.optional = optional ?? false;
 	}
 	symbol: GrpcSymbol;
 	type: GrpcType;
+	optional: boolean;
 }
 
 export class MessageDefinition {
@@ -300,19 +302,35 @@ export class ProtoDefinition {
 		for (const [mKey, mVal] of Object.entries(type.fields)) {
 			fieldMap.set(mKey, new MessageField(
 				new GrpcSymbol(mKey, SymbolType.Field), 
-				this.ResolveGrpcType(namespaces, mVal.type)
+				this.ResolveGrpcType(namespaces, mVal.type),
+				mVal.options?.proto3_optional === true
 			));
 		}
 
 		if (type.oneofs != null) {
 			for (const [oneOfKey, oneOf] of Object.entries(type.oneofs)) {
-				const oneOfDefinition: Record<string, GrpcType> = {};
-				for (const oneOfIndex of oneOf.oneof) {
-					const MessageField = fieldMap.get(oneOfIndex);
-					if (MessageField == null) {
+				//Before doing anything, we have to make sure that this does not refer to a optional field
+				if (oneOf.oneof.length == 1) {
+					const messageField = fieldMap.get(oneOf.oneof[0]);
+					if (messageField == null) {
 						throw new Error("Expected field to be in message");
 					}
-					oneOfDefinition[oneOfIndex] = MessageField.type;
+					if (messageField.optional) {
+						//This is a optional field, therefore dont make a oneof out of this
+						continue;
+					}
+				}
+
+				const oneOfDefinition: Record<string, GrpcType> = {};
+				for (const oneOfIndex of oneOf.oneof) {
+					const messageField = fieldMap.get(oneOfIndex);
+					if (messageField?.optional) {
+						throw new Error("Optional cannot be part of a oneof");
+					}
+					if (messageField == null) {
+						throw new Error("Expected field to be in message");
+					}
+					oneOfDefinition[oneOfIndex] = messageField.type;
 					fieldMap.delete(oneOfIndex);
 				}
 				fieldMap.set(oneOfKey, new MessageField(new GrpcSymbol(oneOfKey, SymbolType.Field), new GrpcOneofType(oneOfDefinition)));
