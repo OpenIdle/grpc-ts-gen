@@ -88,7 +88,11 @@ export class TSCodeWriter implements ICodeWriter {
 					if (this._requestBodyAsParameters) {
 						parameters = "";
 						const message = protoDefinition.FindMessage(method.inputType.symbol);
-						parameters = message.fields.map((messageField) => `${this._namingTransformer.ConvertSymbol(messageField.symbol)}: ${this.GetTSTypeNameAndImport(messageField.type, this._definitionWriter)}`).join(", ");
+						parameters = message.fields
+							.map((messageField) => 
+								`${this._namingTransformer.ConvertSymbol(messageField.symbol)}: ${this.GetTSTypeNameAndImport(messageField.type, this._definitionWriter)}${messageField.optional ? " | undefined" : ""}`
+							)
+							.join(", ");
 					} else {
 						parameters = "request: " + this.GetTSTypeNameAndImport(method.inputType, this._definitionWriter);
 					}

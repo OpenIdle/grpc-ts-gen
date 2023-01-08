@@ -34,6 +34,7 @@ message DifferentRequest {
 		SimpleRequest simpleRequest = 3;
 	}
 	NestedMessage nestedMessage = 4;
+	optional string optionalField = 5;
 }
 
 message DifferentResponse {
@@ -42,9 +43,18 @@ message DifferentResponse {
 		int32 bobother = 2;
 		SimpleResponse simpleResponse = 3;
 	}
+	optional string optionalField = 5;
 }
+
+
+message OptionalContainer {
+	optional string hello = 1;
+	string bob = 2;
+}
+
 
 service SimpleService {
 	rpc method1(SimpleRequest) returns (SimpleResponse);
 	rpc method2(DifferentRequest) returns (DifferentResponse);
+	rpc method3(OptionalContainer) returns (OptionalContainer);
 }
