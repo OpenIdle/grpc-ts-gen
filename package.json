@@ -1,10 +1,14 @@
 {
   "name": "grpc-ts-gen",
-  "version": "1.0.2",
+  "version": "0.2.0",
   "description": "",
-  "main": "./dist/src/grpc-ts-gen.ts",
+  "main": "./dist/src/index.js",
   "scripts": {
-    "test": "npx mocha --parallel dist/test/**/*.js"
+    "build": "npx tsc",
+    "test": "npx mocha --enable-source-maps",
+    "test-watch": "npx mocha --watch --enable-source-maps",
+    "coverage": "npx nyc --reporter=lcov --report-dir=./coverage npm test",
+    "lint": "npx eslint src/**/*.ts test/**/*.ts"
   },
   "repository": {
     "type": "git",
@@ -21,16 +25,25 @@
     "@grpc/proto-loader": "^0.7.3"
   },
   "bin": {
-    "grpc-ts-gen": "./dist/grpc-ts-gen.js"
+    "grpc-ts-gen": "./dist/src/grpc-ts-gen.js"
   },
   "files": [
+    "dist/src/CasingGenerator.js",
     "dist/src/CodeGenerator.js",
+    "dist/src/DefaultTransformer.js",
     "dist/src/grpc-ts-gen.js",
     "dist/src/GRPCDefinitionTranslator.js",
+    "dist/src/ICodeGenerator.js",
     "dist/src/ICodeWriter.js",
+    "dist/src/IModuleCodeGenerator.js",
     "dist/src/INamingTransformer.js",
-    "dist/src/NamespaceAwareCodeGenerator.js",
+    "dist/src/index.d.ts",
+    "dist/src/index.js",
+    "dist/src/OptionParser.js",
+    "dist/src/Program.js",
+    "dist/src/TSCodeGenerator.js",
     "dist/src/TSCodeWriter.js",
+    "dist/src/TypeGenerator.js",
     "dist/src/VirtualDirectory.js"
   ],
   "devDependencies": {
@@ -38,8 +51,12 @@
     "@types/chai": "^4.3.4",
     "@types/mocha": "^10.0.1",
     "@types/node": "^18.11.10",
-    "@types/protobufjs": "^6.0.0",
+    "@typescript-eslint/eslint-plugin": "^5.46.1",
+    "@typescript-eslint/parser": "^5.46.1",
     "chai": "^4.3.7",
-    "mocha": "^10.1.0"
+    "eslint": "^8.30.0",
+    "mocha": "^10.1.0",
+    "nyc": "^15.1.0",
+    "typescript": "^4.9.4"
   }
 }

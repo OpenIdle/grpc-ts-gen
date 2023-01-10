@@ -1,0 +1,8 @@
+{
+    "parallel": true,
+    "spec": ["dist/test/**/*.test.js"],
+    "watch-files": [
+        "dist/test/**/*.js",
+        "dist/src/**/*.js"
+    ]
+}

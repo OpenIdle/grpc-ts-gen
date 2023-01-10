@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+package test.data.servicesamples;
+
+service SimpleService {
+	rpc method1(stream SimpleRequest) returns (stream SimpleResponse);
+	rpc method2(stream SimpleRequest) returns (stream SimpleRequest);
+	rpc method3(SimpleRequest) returns (stream SimpleResponse);
+	rpc method4(stream SimpleRequest) returns (SimpleResponse);
+	rpc method5(SimpleRequest) returns (SimpleResponse);
+}
+
+message SimpleRequest {
+	string username = 1;
+	uint32 someNumber = 2;
+	int32 signedNumber = 3;
+	string anotherString = 4;
+	oneof oneOfField {
+		SimpleResponse simpleResponse = 5;
+	}
+}
+
+message SimpleResponse {
+	string username = 1;
+	uint32 someNumber = 2;
+	int32 signedNumber = 3;
+	string anotherString = 4;
+}
