@@ -135,23 +135,45 @@ class UnresolvedForwardDependencyType extends GrpcType {
 }
 
 export class MessageField {
-	constructor(symbol: GrpcSymbol, type: GrpcType, optional?: boolean) {
+	constructor(symbol: GrpcSymbol, type: GrpcType, id: number, optional?: boolean) {
 		this.symbol = symbol;
 		this.type = type;
 		this.optional = optional ?? false;
+		this.id = id;
 	}
 	symbol: GrpcSymbol;
 	type: GrpcType;
 	optional: boolean;
+	id: number;
 }
 
 export class MessageDefinition {
-	constructor(symbol: NamespacedSymbol, fields: MessageField[]) {
+	constructor(symbol: NamespacedSymbol, fields?: MessageField[]) {
 		this.symbol = symbol;
-		this.fields = fields;
+		this.fields = fields ?? [];
+		this.fields.sort((a,b) => a.id - b.id);
 	}
+
+	AddField(field: MessageField): void {
+		//Binary insert
+		let low = 0;
+		let high = this.fields.length;
+		while (low < high) {
+			const mid = Math.floor((low + high) / 2);
+			if (this.fields[mid].id < field.id)
+				low = mid + 1;
+			else
+				high = mid;
+		}
+		this.fields.splice(low, 0, field);
+	}
+
+	GetFields(): IterableIterator<MessageField> {
+		return this.fields.values();
+	}
+	
 	symbol: NamespacedSymbol;
-	fields: MessageField[];
+	private fields: MessageField[];
 }
 
 export class ServiceMethod {
@@ -211,7 +233,7 @@ export class ProtoDefinition {
 
 	private ResolveForwardDependencies(): void {
 		for (const message of this.messages.values()) {
-			for (const field of message.fields) {
+			for (const field of message.GetFields()) {
 				if (field.type instanceof UnresolvedForwardDependencyType) {
 					field.type = this.ResolveForwardDependencyType(field.type);
 				}
@@ -294,8 +316,7 @@ export class ProtoDefinition {
 
 	private CreateMessageDefinition(namespaces: GrpcSymbol[], name: string, type: IType): void {
 		const messageDefinition = new MessageDefinition(
-			new NamespacedSymbol(namespaces, new GrpcSymbol(name, SymbolType.Message)),
-			[]
+			new NamespacedSymbol(namespaces, new GrpcSymbol(name, SymbolType.Message))
 		);
 		
 		const fieldMap: Map<string, MessageField> = new Map();
@@ -303,6 +324,7 @@ export class ProtoDefinition {
 			fieldMap.set(mKey, new MessageField(
 				new GrpcSymbol(mKey, SymbolType.Field), 
 				this.ResolveGrpcType(namespaces, mVal.type),
+				mVal.id,
 				mVal.options?.proto3_optional === true
 			));
 		}
@@ -320,7 +342,7 @@ export class ProtoDefinition {
 						continue;
 					}
 				}
-
+				let newId = Number.MAX_SAFE_INTEGER;
 				const oneOfDefinition: Record<string, GrpcType> = {};
 				for (const oneOfIndex of oneOf.oneof) {
 					const messageField = fieldMap.get(oneOfIndex);
@@ -330,18 +352,21 @@ export class ProtoDefinition {
 					if (messageField == null) {
 						throw new Error("Expected field to be in message");
 					}
+					newId = Math.min(messageField.id, newId);
 					oneOfDefinition[oneOfIndex] = messageField.type;
 					fieldMap.delete(oneOfIndex);
 				}
-				fieldMap.set(oneOfKey, new MessageField(new GrpcSymbol(oneOfKey, SymbolType.Field), new GrpcOneofType(oneOfDefinition)));
+				fieldMap.set(oneOfKey, new MessageField(
+					new GrpcSymbol(oneOfKey, SymbolType.Field),
+					new GrpcOneofType(oneOfDefinition),
+					newId
+				));
 			}
 		}
 		
 		for (const field of fieldMap.values()) {
-			messageDefinition.fields.push(field);
+			messageDefinition.AddField(field);
 		}
-
-		messageDefinition.fields.sort((a,b) => a.symbol.name.localeCompare(b.symbol.name));
 
 		this.messages.set(messageDefinition.symbol.Assemble(), messageDefinition);
 	}
