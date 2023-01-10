@@ -63,7 +63,7 @@ export class TSCodeWriter implements ICodeWriter {
 	WriteMessageInterface(message: MessageDefinition): void {
 		this._definitionWriter.Group(message.symbol.namespace, () => {
 			this._definitionWriter.DefineInterface(message.symbol.name, () => {
-				for (const field of message.fields) {
+				for (const field of message.GetFields()) {
 					this._definitionWriter.AddLine(`readonly ${this._namingTransformer.ConvertSymbol(field.symbol)}${field.optional ? "?" : ""}: ${this.GetTSTypeNameAndImport(field.type, this._definitionWriter)};`);
 				}
 			});
@@ -88,7 +88,7 @@ export class TSCodeWriter implements ICodeWriter {
 					if (this._requestBodyAsParameters) {
 						parameters = "";
 						const message = protoDefinition.FindMessage(method.inputType.symbol);
-						parameters = message.fields
+						parameters = Array.from(message.GetFields())
 							.map((messageField) => 
 								`${this._namingTransformer.ConvertSymbol(messageField.symbol)}: ${this.GetTSTypeNameAndImport(messageField.type, this._definitionWriter)}${messageField.optional ? " | undefined" : ""}`
 							)
@@ -146,7 +146,7 @@ export class TSCodeWriter implements ICodeWriter {
 						const message = protoDefinition.FindMessage(method.inputType.symbol);
 						this._definitionWriter.AddLine(`service.${this._namingTransformer.ConvertSymbol(method.symbol)}(`);
 						this._definitionWriter.Indent();
-						for (const field of message.fields) {
+						for (const field of message.GetFields()) {
 							if (field.type instanceof GrpcMessageType || field.type instanceof GrpcOneofType) {
 								this.TransformType(`callObject.request[${JSON.stringify(field.symbol.name)}]`, null, this._definitionWriter, field.type, protoDefinition, "forward");
 							} else {
@@ -213,7 +213,7 @@ export class TSCodeWriter implements ICodeWriter {
 	private TransformTypeInternal(from: string, generator: ICodeGenerator, type: GrpcMessageType, protoDefinition: ProtoDefinition, conversion: "reverse" | "forward"): void {
 		const message = protoDefinition.FindMessage(type.symbol);
 
-		for (const field of message.fields) {
+		for (const field of message.GetFields()) {
 			const fieldToSet = conversion == "forward" ?
 				JSON.stringify(this._namingTransformer.ConvertSymbol(field.symbol)) : 
 				JSON.stringify(field.symbol.name);

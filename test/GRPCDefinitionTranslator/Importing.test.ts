@@ -6,10 +6,10 @@ import { loadFromPbjsDefinition } from "../helper";
 const ExepctedSimpleMessage = new MessageDefinition(
 	NamespacedSymbol.FromString("test.data.messagesamples.SimpleMessage", SymbolType.Message),
 	[
-		new MessageField(new GrpcSymbol("anotherString", SymbolType.Field), new GrpcType("string")),
-		new MessageField(new GrpcSymbol("signedNumber", SymbolType.Field), new GrpcType("int32")),
-		new MessageField(new GrpcSymbol("someNumber", SymbolType.Field), new GrpcType("uint32")),
-		new MessageField(new GrpcSymbol("username", SymbolType.Field), new GrpcType("string")),
+		new MessageField(new GrpcSymbol("username", SymbolType.Field), new GrpcType("string"), 1),
+		new MessageField(new GrpcSymbol("someNumber", SymbolType.Field), new GrpcType("uint32"), 2),
+		new MessageField(new GrpcSymbol("signedNumber", SymbolType.Field), new GrpcType("int32"), 3),
+		new MessageField(new GrpcSymbol("anotherString", SymbolType.Field), new GrpcType("string"), 4),
 	]
 );
 
@@ -18,17 +18,20 @@ const ExpectedImportedDependencies = new MessageDefinition(
 	[
 		new MessageField(
 			new GrpcSymbol("nestedMessage", SymbolType.Field), 
-			new GrpcMessageType(NamespacedSymbol.FromString("test.data.messagesamples.SimpleMessage", SymbolType.Message))
+			new GrpcMessageType(NamespacedSymbol.FromString("test.data.messagesamples.SimpleMessage", SymbolType.Message)),
+			2
 		),
 		new MessageField(
 			new GrpcSymbol("oneofField", SymbolType.Field),
 			new GrpcOneofType({
 				"someMessage": new GrpcMessageType(NamespacedSymbol.FromString("test.data.messagesamples.SimpleMessage", SymbolType.Message))
-			})
+			}),
+			3
 		),
 		new MessageField(
 			new GrpcSymbol("status", SymbolType.Field), 
-			new GrpcEnumType(NamespacedSymbol.FromString("test.data.enumsamples.Status", SymbolType.Enum))
+			new GrpcEnumType(NamespacedSymbol.FromString("test.data.enumsamples.Status", SymbolType.Enum)),
+			1
 		)
 	]
 );
@@ -48,11 +51,13 @@ const ExpectedOtherMessage = new MessageDefinition(
 	[
 		new MessageField(
 			new GrpcSymbol("simpleMessage", SymbolType.Field),
-			new GrpcMessageType(NamespacedSymbol.FromString("test.data.messagesamples.SimpleMessage", SymbolType.Message))
+			new GrpcMessageType(NamespacedSymbol.FromString("test.data.messagesamples.SimpleMessage", SymbolType.Message)),
+			1
 		),
 		new MessageField(
 			new GrpcSymbol("status", SymbolType.Field),
-			new GrpcEnumType(NamespacedSymbol.FromString("test.data.enumsamples.Status", SymbolType.Enum))
+			new GrpcEnumType(NamespacedSymbol.FromString("test.data.enumsamples.Status", SymbolType.Enum)),
+			2
 		)
 	]
 );

@@ -5,26 +5,26 @@ import { loadFromPbjsDefinition } from "../helper";
 const ExepctedSimpleMessage = new MessageDefinition(
 	NamespacedSymbol.FromString("test.data.messagesamples.SimpleMessage", SymbolType.Message),
 	[
-		new MessageField(new GrpcSymbol("anotherString", SymbolType.Field), new GrpcType("string")),
-		new MessageField(new GrpcSymbol("signedNumber", SymbolType.Field), new GrpcType("int32")),
-		new MessageField(new GrpcSymbol("someNumber", SymbolType.Field), new GrpcType("uint32")),
-		new MessageField(new GrpcSymbol("username", SymbolType.Field), new GrpcType("string")),
+		new MessageField(new GrpcSymbol("username", SymbolType.Field), new GrpcType("string"), 1),
+		new MessageField(new GrpcSymbol("someNumber", SymbolType.Field), new GrpcType("uint32"), 2),
+		new MessageField(new GrpcSymbol("signedNumber", SymbolType.Field), new GrpcType("int32"), 3),
+		new MessageField(new GrpcSymbol("anotherString", SymbolType.Field), new GrpcType("string"), 4),
 	]
 );
 
 const ExpectedAdvancedMessage = new MessageDefinition(
 	NamespacedSymbol.FromString("test.data.messagesamples.AdvancedMessage", SymbolType.Message),
 	[
-		new MessageField(new GrpcSymbol("anotherString", SymbolType.Field), new GrpcType("string")),
-		new MessageField(new GrpcSymbol("nestedMessage", SymbolType.Field), new GrpcMessageType(
-			NamespacedSymbol.FromString("test.data.messagesamples.SimpleMessage", SymbolType.Message))
-		),
-		new MessageField(new GrpcSymbol("signedNumber", SymbolType.Field), new GrpcType("int32")),
-		new MessageField(new GrpcSymbol("someNumber", SymbolType.Field), new GrpcType("uint32")),
+		new MessageField(new GrpcSymbol("username", SymbolType.Field), new GrpcType("string"), 1),
+		new MessageField(new GrpcSymbol("someNumber", SymbolType.Field), new GrpcType("uint32"), 2),
+		new MessageField(new GrpcSymbol("signedNumber", SymbolType.Field), new GrpcType("int32"), 3),
+		new MessageField(new GrpcSymbol("anotherString", SymbolType.Field), new GrpcType("string"), 4),
 		new MessageField(new GrpcSymbol("status", SymbolType.Field), new GrpcEnumType(
-			NamespacedSymbol.FromString("test.data.messagesamples.Status", SymbolType.Enum))
-		),
-		new MessageField(new GrpcSymbol("username", SymbolType.Field), new GrpcType("string")),
+			NamespacedSymbol.FromString("test.data.messagesamples.Status", SymbolType.Enum)
+		), 5),
+		new MessageField(new GrpcSymbol("nestedMessage", SymbolType.Field), new GrpcMessageType(
+			NamespacedSymbol.FromString("test.data.messagesamples.SimpleMessage", SymbolType.Message)
+		), 6),
 	]
 );
 
@@ -35,9 +35,9 @@ const ExpectedOneofMessage = new MessageDefinition(
 			someMessage: new GrpcMessageType(NamespacedSymbol.FromString("test.data.messagesamples.SomeMessage", SymbolType.Message)),
 			str: new GrpcType("string"),
 			i: new GrpcType("int32"),
-		})),
-		new MessageField(new GrpcSymbol("someOtherField", SymbolType.Field), new GrpcType("string")),
-		new MessageField(new GrpcSymbol("someOtherField2", SymbolType.Field), new GrpcType("string"))
+		}), 2),
+		new MessageField(new GrpcSymbol("someOtherField", SymbolType.Field), new GrpcType("string"), 1),
+		new MessageField(new GrpcSymbol("someOtherField2", SymbolType.Field), new GrpcType("string"), 5)
 	]
 );
 
@@ -47,13 +47,15 @@ const ExpectedOptionalMessage = new MessageDefinition(
 		new MessageField(
 			new GrpcSymbol("testField", SymbolType.Field), 
 			new GrpcType("string"),
+			1,
 			true
 		),
 		new MessageField(
 			new GrpcSymbol("testField2", SymbolType.Field),
 			new GrpcOneofType({
 				option: new GrpcType("string")
-			})
+			}),
+			2
 		)
 	]
 );

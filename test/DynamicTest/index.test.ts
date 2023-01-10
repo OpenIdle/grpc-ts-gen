@@ -185,8 +185,8 @@ describe("DynamicTest", () => {
 		const testServer = new DynamicTestRbapServer(mockGrpcServer);
 		let receivedRequestValues: any[] = [];
 		testServer.AddtestNamespacedataNamespaceservicesamplesNamespaceSimpleService({
-			method1Procedure: async (anotherString: string, signedNumber: number, someEnum: typeof SimpleEnumEnum, someNumber: number, username: string) => {
-				receivedRequestValues = [anotherString, signedNumber, someEnum, someNumber, username];
+			method1Procedure: async (username: string, someNumber: string, signedNumber: number, anotherString: string, someEnum: typeof SimpleEnumEnum) => {
+				receivedRequestValues = [username, someNumber, signedNumber, anotherString, someEnum];
 				return {
 					"someNumberField": someNumber + 1,
 					"signedNumberField": signedNumber + 1,
@@ -204,7 +204,7 @@ describe("DynamicTest", () => {
 			"someEnum": SimpleEnumEnum.VALUE323
 		});
 
-		assert.deepEqual(receivedRequestValues, ["lorem", 54, SimpleEnumEnum.VALUE323, 42, "foobar"]);
+		assert.deepEqual(receivedRequestValues, ["foobar", 42, 54, "lorem", SimpleEnumEnum.VALUE323]);
 
 		assert.deepEqual(response.response, {
 			"someNumber": 43,
@@ -344,9 +344,6 @@ describe("DynamicTest", () => {
 
 		assert.deepEqual(receivedRequestValues, [
 			{
-				helloField: "bar"
-			},
-			{
 				nameField: undefined,
 				numField: undefined,
 				simpleRequestField: {
@@ -356,6 +353,9 @@ describe("DynamicTest", () => {
 					anotherStringField: "barbaz",
 					someEnumField: SimpleEnumEnum.VALUE323
 				}
+			},
+			{
+				helloField: "bar"
 			},
 			undefined
 		]);
@@ -401,8 +401,8 @@ describe("DynamicTest", () => {
 		});
 
 		assert.deepEqual(receivedRequestValues, [
-			"ok",
-			"hello"
+			"hello",
+			"ok"
 		]);
 	});
 });
