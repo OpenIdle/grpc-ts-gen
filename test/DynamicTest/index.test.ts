@@ -14,6 +14,7 @@ import { SymbolType } from "../../src/GRPCDefinitionTranslator";
 import { GrpcResponseError } from "../../src";
 import * as grpc from "@grpc/grpc-js";
 import { mkdir } from "fs/promises";
+import { ProgramOptions } from "../../src/OptionParser";
 
 async function CompileTsProgram(path: string, filenames: string[]): Promise<void> {
 	//compile the generated code using the typescript compiler and put the output into dist/dynamic-sample
@@ -59,6 +60,22 @@ async function CompileTsProgram(path: string, filenames: string[]): Promise<void
 }
 
 describe("DynamicTest", () => {
+	const rbaoOptions: ProgramOptions = {
+		protoBasePath: "test/data/dynamicsample/",
+		serverName: "DynamicTestRbao",
+		outPath: "dynamic-test/rbap",
+		requestBodyAsParameters: false,
+		module: false
+	};
+
+	const rbapOptions: ProgramOptions = {
+		protoBasePath: "test/data/dynamicsample/",
+		serverName: "DynamicTestRbap",
+		outPath: "dynamic-test/rbap",
+		requestBodyAsParameters: true,
+		module: false
+	};
+
 
 	before(async function() {
 		this.timeout(20000);
@@ -81,11 +98,11 @@ describe("DynamicTest", () => {
 
 		await mkdir("dynamic-test", {recursive: true});
 
-		const codeWriter = new TypeGenerator(new TSCodeWriter(namingTransformer, false, "DynamicTestRbao", "./../../src"));
+		const codeWriter = new TypeGenerator(new TSCodeWriter(namingTransformer, rbaoOptions, "./../../src"));
 		const vd = await codeWriter.Create("test/data/dynamicsample/");
 		await vd.WriteVirtualDirectory("dynamic-test/rbao");
 
-		const codeWriterRbap = new TypeGenerator(new TSCodeWriter(namingTransformer, true, "DynamicTestRbap", "./../../src"));
+		const codeWriterRbap = new TypeGenerator(new TSCodeWriter(namingTransformer,rbapOptions, "./../../src"));
 		const vdRbap = await codeWriterRbap.Create("test/data/dynamicsample/");
 		await vdRbap.WriteVirtualDirectory("dynamic-test/rbap");
 		

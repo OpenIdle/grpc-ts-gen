@@ -4,28 +4,26 @@ import { ICodeGenerator } from "./ICodeGenerator";
 import { ICodeWriter } from "./ICodeWriter";
 import { IModuleCodeGenerator } from "./IModuleCodeGenerator";
 import { INamingTransformer } from "./INamingTransformer";
-import { TSCodeGenerator } from "./TSCodeGenerator";
+import { TSCodeGenerator, TSCodeGeneratorOptions } from "./TSCodeGenerator";
 import { VirtualDirectory } from "./VirtualDirectory";
 
 const STRING_TYPE_NAME = "string";
 const NUMBER_TYPE_NAME = "number";
 
+export interface TSCodeWriterOptions extends TSCodeGeneratorOptions {
+	requestBodyAsParameters: boolean;
+	serverName: string;
+}
+
 export class TSCodeWriter implements ICodeWriter {
 	_definitionWriter: TSCodeGenerator;
-	_namingTransformer: INamingTransformer;
-	_requestBodyAsParameters: boolean;
-	_serverName: string;
 	_grpcTsGenModulePath: string;
 	constructor(
-		namingTransformer: INamingTransformer, 
-		requestBodyAsParameters: boolean,
-		serverName: string,
+		private _namingTransformer: INamingTransformer,
+		private _options: TSCodeWriterOptions,
 		grpcTsGenModulePath: string,
 	) {
-		this._namingTransformer = namingTransformer;
-		this._requestBodyAsParameters = requestBodyAsParameters;
-		this._serverName = serverName;
-		this._definitionWriter = new TSCodeGenerator(this._namingTransformer);
+		this._definitionWriter = new TSCodeGenerator(this._namingTransformer, _options);
 		this._grpcTsGenModulePath = grpcTsGenModulePath;
 	}
 
@@ -85,7 +83,7 @@ export class TSCodeWriter implements ICodeWriter {
 			this._definitionWriter.DefineInterface(service.symbol.name, () => {
 				for (const method of service.methods) {
 					let parameters: string;
-					if (this._requestBodyAsParameters) {
+					if (this._options.requestBodyAsParameters) {
 						parameters = "";
 						const message = protoDefinition.FindMessage(method.inputType.symbol);
 						parameters = Array.from(message.GetFields())
@@ -116,13 +114,17 @@ export class TSCodeWriter implements ICodeWriter {
 			this._definitionWriter.AddLine(`export const protoJson: INamespace = ${JSON.stringify(pbjsDefinition)} as INamespace;`);
 		});
 		
-		const className = `${this._serverName}Server`;
+		const className = `${this._options.serverName}Server`;
 
 		this._definitionWriter.Group([new GrpcSymbol(className, SymbolType.Special)], () => {
 			this._definitionWriter.AddImport(packageDefinitionSymbol);
-			this._definitionWriter.AddLine("import * as protoLoader from \"@grpc/proto-loader\";");
-			
-			this._definitionWriter.AddLine(`import {GrpcResponseError, IGrpcServerImplementation} from  ${JSON.stringify(this._grpcTsGenModulePath)};`);
+			if (this._options.module) {
+				this._definitionWriter.AddLine("const protoLoader = await import(\"@grpc/proto-loader\");");
+				this._definitionWriter.AddLine(`const {GrpcResponseError, IGrpcServerImplementation} = await import(${JSON.stringify(this._grpcTsGenModulePath)});`);
+			} else {
+				this._definitionWriter.AddLine("import * as protoLoader from \"@grpc/proto-loader\";");
+				this._definitionWriter.AddLine(`import {GrpcResponseError, IGrpcServerImplementation} from  ${JSON.stringify(this._grpcTsGenModulePath)};`);
+			}
 			this._definitionWriter.AddLine(`export class ${className} {`);
 			this._definitionWriter.Indent();
 			this._definitionWriter.AddLine("private _grpcServer: IGrpcServerImplementation;");
@@ -142,7 +144,7 @@ export class TSCodeWriter implements ICodeWriter {
 				for (const method of service.methods) {
 					this._definitionWriter.AddLine(`${JSON.stringify(method.symbol.name)}: (callObject, callback) => {`);
 					this._definitionWriter.Indent();
-					if (this._requestBodyAsParameters) {
+					if (this._options.requestBodyAsParameters) {
 						const message = protoDefinition.FindMessage(method.inputType.symbol);
 						this._definitionWriter.AddLine(`service.${this._namingTransformer.ConvertSymbol(method.symbol)}(`);
 						this._definitionWriter.Indent();
