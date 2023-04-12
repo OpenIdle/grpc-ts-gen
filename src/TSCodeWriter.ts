@@ -120,8 +120,11 @@ export class TSCodeWriter implements ICodeWriter {
 			this._definitionWriter.AddImport(packageDefinitionSymbol);
 			if (this._options.module) {
 				this._definitionWriter.AddLine("const protoLoader = await import(\"@grpc/proto-loader\");");
-				this._definitionWriter.AddLine(`const {GrpcResponseError, IGrpcServerImplementation} = await import(${JSON.stringify(this._grpcTsGenModulePath)});`);
+				this._definitionWriter.AddLine(`const {GrpcResponseError} = await import(${JSON.stringify(this._grpcTsGenModulePath)});`);
+				this._definitionWriter.AddLine("import type { PackageDefinition, ServiceDefinition} from \"@grpc/proto-loader\";");
+				this._definitionWriter.AddLine("import type { IGrpcServerImplementation } from \"grpc-ts-gen\";");
 			} else {
+				this._definitionWriter.AddLine("import { PackageDefinition, ServiceDefinition } as protoLoader from \"@grpc/proto-loader\";");
 				this._definitionWriter.AddLine("import * as protoLoader from \"@grpc/proto-loader\";");
 				this._definitionWriter.AddLine(`import {GrpcResponseError, IGrpcServerImplementation} from  ${JSON.stringify(this._grpcTsGenModulePath)};`);
 			}
@@ -129,7 +132,7 @@ export class TSCodeWriter implements ICodeWriter {
 			this._definitionWriter.Indent();
 			this._definitionWriter.AddLine("private _grpcServer: IGrpcServerImplementation;");
 			this._definitionWriter.AddLine("get GrpcServer(): IGrpcServerImplementation { return this._grpcServer; }");
-			this._definitionWriter.AddLine("private _packageDefinition: protoLoader.PackageDefinition;");
+			this._definitionWriter.AddLine("private _packageDefinition: PackageDefinition;");
 			this._definitionWriter.AddLine("constructor(serverImplementation: IGrpcServerImplementation) {");
 			this._definitionWriter.Indent();
 			this._definitionWriter.AddLine("this._grpcServer = serverImplementation;");
@@ -139,7 +142,7 @@ export class TSCodeWriter implements ICodeWriter {
 			for (const service of protoDefinition.GetServices()) {
 				this._definitionWriter.AddLine(`Add${service.symbol.namespace.map((sym) => this._namingTransformer.ConvertSymbol(sym)).join("")}${this._namingTransformer.ConvertSymbol(service.symbol.name)}(service: ${this.ImportSymbol(service.symbol)}): void {`);
 				this._definitionWriter.Indent();
-				this._definitionWriter.AddLine(`this._grpcServer.addService<any>(this._packageDefinition[${JSON.stringify(service.symbol.Assemble())}] as protoLoader.ServiceDefinition, {`);
+				this._definitionWriter.AddLine(`this._grpcServer.addService<any>(this._packageDefinition[${JSON.stringify(service.symbol.Assemble())}] as ServiceDefinition, {`);
 				this._definitionWriter.Indent();
 				for (const method of service.methods) {
 					this._definitionWriter.AddLine(`${JSON.stringify(method.symbol.name)}: (callObject, callback) => {`);
