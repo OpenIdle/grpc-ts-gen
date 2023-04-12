@@ -3,7 +3,7 @@
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-call */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
-import { TSCodeWriter } from "../../src/TSCodeWriter";
+import { TSCodeWriter, TSCodeWriterOptions } from "../../src/TSCodeWriter";
 import { TypeGenerator } from "../../src/TypeGenerator";
 import { MockGrpcServerImplementation, MockNamingTransformer } from "../helper";
 import * as ts from "typescript";
@@ -60,18 +60,14 @@ async function CompileTsProgram(path: string, filenames: string[]): Promise<void
 }
 
 describe("DynamicTest", () => {
-	const rbaoOptions: ProgramOptions = {
-		protoBasePath: "test/data/dynamicsample/",
+	const rbaoOptions: TSCodeWriterOptions = {
 		serverName: "DynamicTestRbao",
-		outPath: "dynamic-test/rbap",
 		requestBodyAsParameters: false,
 		module: false
 	};
 
-	const rbapOptions: ProgramOptions = {
-		protoBasePath: "test/data/dynamicsample/",
+	const rbapOptions: TSCodeWriterOptions = {
 		serverName: "DynamicTestRbap",
-		outPath: "dynamic-test/rbap",
 		requestBodyAsParameters: true,
 		module: false
 	};
