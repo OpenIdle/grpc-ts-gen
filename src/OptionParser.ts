@@ -3,6 +3,7 @@ export interface FileConfig {
 	outPath: string;
 	serverName: string;
 	requestBodyAsObject: boolean;
+	module: boolean;
 }
 
 export interface ProgramOptions {
@@ -10,6 +11,7 @@ export interface ProgramOptions {
 	outPath: string;
 	requestBodyAsParameters: boolean;
 	serverName: string;
+	module: boolean;
 }
 
 export class InvalidOptionError extends Error {
@@ -47,6 +49,12 @@ export class OptionParser {
 			}
 			customOptions.requestBodyAsParameters = !fileConfig.requestBodyAsObject;
 		}
+		if ("module" in fileConfig) {
+			if (typeof(fileConfig.module) != "boolean") {
+				throw new InvalidOptionError("module has to be a boolean");
+			}
+			customOptions.module = fileConfig.module;
+		}
 
 		for (let i = 2; i < args.length; i++) {
 			if (i + 1 < args.length) {
@@ -67,6 +75,8 @@ export class OptionParser {
 	
 			if (args[i].toLowerCase() == "--request-body-as-object") {
 				customOptions.requestBodyAsParameters = false;
+			} else if (args[i].toLowerCase() == "--module") {
+				customOptions.module = true;
 			} else {
 				throw new InvalidOptionError(`Unknown option: ${args[i]}`);
 			}
@@ -84,7 +94,8 @@ export class OptionParser {
 			requestBodyAsParameters: customOptions.requestBodyAsParameters ?? true,
 			serverName: customOptions.serverName ?? "Proto",
 			protoBasePath: customOptions.protoBasePath,
-			outPath: customOptions.outPath
+			outPath: customOptions.outPath,
+			module:customOptions.module ?? false
 		};
 
 		return options;

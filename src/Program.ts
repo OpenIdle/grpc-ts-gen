@@ -20,9 +20,8 @@ export class Program {
 
 		const creator = new TypeGenerator(
 			new TSCodeWriter(
-				new DefaultTransformer(), 
-				options.requestBodyAsParameters,
-				options.serverName,
+				new DefaultTransformer(),
+				options,
 				"grpc-ts-gen"
 			)
 		);

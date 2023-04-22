@@ -5,6 +5,7 @@ import { ICodeGenerator } from "./ICodeGenerator";
 import { IModuleCodeGenerator } from "./IModuleCodeGenerator";
 import { INamingTransformer } from "./INamingTransformer";
 import { VirtualDirectory } from "./VirtualDirectory";
+import { ProgramOptions } from "./OptionParser";
 
 class Importation {
 	modulePath: GrpcSymbol[];
@@ -62,15 +63,24 @@ class ModuleDescription {
 	}
 }
 
+export interface TSCodeGeneratorOptions {
+	module: boolean
+}
+
 export class TSCodeGenerator implements IModuleCodeGenerator {
 	private _modules: Map<string, ModuleDescription>;
 	private _currentNamespaceStack: Array<GrpcSymbol>;
-	private _namingTransformer: INamingTransformer;
-	constructor(namingTransformer: INamingTransformer) {
+	private _options: TSCodeGeneratorOptions;
+	constructor(
+		private _namingTransformer: INamingTransformer, 
+		options?: Partial<TSCodeGeneratorOptions>
+	) {
+		this._options = {
+			module: options?.module ?? false
+		};
 		this._currentNamespaceStack = [];
 		this._modules = new Map();
 		this._modules.set("", new ModuleDescription([new GrpcSymbol("index", SymbolType.Special)]));
-		this._namingTransformer = namingTransformer;
 	}
 
 	IndentBlock(cb: () => void): void {
@@ -173,13 +183,15 @@ export class TSCodeGenerator implements IModuleCodeGenerator {
 				}))
 				.sort((a, b) => a.modulePath.localeCompare(b.modulePath));
 		
+		const extension = this._options.module ? ".js" : "";
+
 		for (const transformedImportation of transformedImporations) {
 			generator.AddLine(`import {${transformedImportation.imported.map(x => {
 				if (x.importAs != null) {
 					return `${x.fromName} as ${x.importAs}`;
 				}
 				return `${x.fromName}`;
-			}).join(", ")}} from ${JSON.stringify(transformedImportation.modulePath)};`);
+			}).join(", ")}} from ${JSON.stringify(transformedImportation.modulePath + extension)};`);
 		}
 	}
 
