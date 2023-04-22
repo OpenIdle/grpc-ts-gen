@@ -14,7 +14,6 @@ import { SymbolType } from "../../src/GRPCDefinitionTranslator";
 import { GrpcResponseError } from "../../src";
 import * as grpc from "@grpc/grpc-js";
 import { mkdir } from "fs/promises";
-import { ProgramOptions } from "../../src/OptionParser";
 
 async function CompileTsProgram(path: string, filenames: string[]): Promise<void> {
 	//compile the generated code using the typescript compiler and put the output into dist/dynamic-sample
