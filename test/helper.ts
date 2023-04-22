@@ -51,13 +51,14 @@ export class MockGrpcServerImplementation implements IGrpcServerImplementation {
 	async mockCall(path: string, callObject: unknown): Promise<{err: {code: number} | null, response?: unknown}> {
 		const handler = this._mockImplementations.get(path);
 		if (handler == null) {
-			throw new Error("No hanlder for that path");
+			throw new Error("No handler for that path");
 		}
 		return await new Promise((resolve) => {
 			handler.impl[handler.methodName]({request: callObject}, (err, response) => {
 				if (err)
 					resolve({err: err});
-				resolve({err: null, response: response});
+				else
+					resolve({err: null, response: response});
 			});
 		});
 	}

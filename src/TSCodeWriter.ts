@@ -121,9 +121,11 @@ export class TSCodeWriter implements ICodeWriter {
 			if (this._options.module) {
 				this._definitionWriter.AddLine("const protoLoader = await import(\"@grpc/proto-loader\");");
 				this._definitionWriter.AddLine(`const {GrpcResponseError} = await import(${JSON.stringify(this._grpcTsGenModulePath)});`);
+				this._definitionWriter.AddLine("const { Status } = await import(\"@grpc/grpc-js/build/src/constants.js\");");
 			} else {
 				this._definitionWriter.AddLine("import * as protoLoader from \"@grpc/proto-loader\";");
 				this._definitionWriter.AddLine(`import {GrpcResponseError} from  ${JSON.stringify(this._grpcTsGenModulePath)};`);
+				this._definitionWriter.AddLine("import { Status } from \"@grpc/grpc-js/build/src/constants\";");
 			}
 			this._definitionWriter.AddLine("import type { PackageDefinition, ServiceDefinition} from \"@grpc/proto-loader\";");
 			this._definitionWriter.AddLine(`import type { IGrpcServerImplementation } from ${JSON.stringify(this._grpcTsGenModulePath)};`);
@@ -176,10 +178,12 @@ export class TSCodeWriter implements ICodeWriter {
 					this._definitionWriter.Indent();
 					this._definitionWriter.AddLine("callback({code: err.grpcErrorCode});");
 					this._definitionWriter.Unindent();
-					this._definitionWriter.AddLine("throw err;");
+					this._definitionWriter.AddLine("else");
+					this._definitionWriter.Indent();
+					this._definitionWriter.AddLine("callback({code: Status.INTERNAL});");
 					this._definitionWriter.Unindent();
-					this._definitionWriter.AddLine("})");
 					this._definitionWriter.Unindent();
+					this._definitionWriter.AddLine("});");
 					this._definitionWriter.Unindent();
 					this._definitionWriter.AddLine("},");
 				}

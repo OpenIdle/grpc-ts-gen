@@ -5,7 +5,6 @@ import { ICodeGenerator } from "./ICodeGenerator";
 import { IModuleCodeGenerator } from "./IModuleCodeGenerator";
 import { INamingTransformer } from "./INamingTransformer";
 import { VirtualDirectory } from "./VirtualDirectory";
-import { ProgramOptions } from "./OptionParser";
 
 class Importation {
 	modulePath: GrpcSymbol[];
