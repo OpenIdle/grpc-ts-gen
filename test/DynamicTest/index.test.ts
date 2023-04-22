@@ -98,7 +98,7 @@ describe("DynamicTest", () => {
 		const vd = await codeWriter.Create("test/data/dynamicsample/");
 		await vd.WriteVirtualDirectory("dynamic-test/rbao");
 
-		const codeWriterRbap = new TypeGenerator(new TSCodeWriter(namingTransformer,rbapOptions, "./../../src"));
+		const codeWriterRbap = new TypeGenerator(new TSCodeWriter(namingTransformer, rbapOptions, "./../../src"));
 		const vdRbap = await codeWriterRbap.Create("test/data/dynamicsample/");
 		await vdRbap.WriteVirtualDirectory("dynamic-test/rbap");
 		

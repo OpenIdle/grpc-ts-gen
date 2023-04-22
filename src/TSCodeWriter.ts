@@ -121,13 +121,12 @@ export class TSCodeWriter implements ICodeWriter {
 			if (this._options.module) {
 				this._definitionWriter.AddLine("const protoLoader = await import(\"@grpc/proto-loader\");");
 				this._definitionWriter.AddLine(`const {GrpcResponseError} = await import(${JSON.stringify(this._grpcTsGenModulePath)});`);
-				this._definitionWriter.AddLine("import type { PackageDefinition, ServiceDefinition} from \"@grpc/proto-loader\";");
-				this._definitionWriter.AddLine("import type { IGrpcServerImplementation } from \"grpc-ts-gen\";");
 			} else {
-				this._definitionWriter.AddLine("import { PackageDefinition, ServiceDefinition } as protoLoader from \"@grpc/proto-loader\";");
 				this._definitionWriter.AddLine("import * as protoLoader from \"@grpc/proto-loader\";");
-				this._definitionWriter.AddLine(`import {GrpcResponseError, IGrpcServerImplementation} from  ${JSON.stringify(this._grpcTsGenModulePath)};`);
+				this._definitionWriter.AddLine(`import {GrpcResponseError} from  ${JSON.stringify(this._grpcTsGenModulePath)};`);
 			}
+			this._definitionWriter.AddLine("import type { PackageDefinition, ServiceDefinition} from \"@grpc/proto-loader\";");
+			this._definitionWriter.AddLine(`import type { IGrpcServerImplementation } from ${JSON.stringify(this._grpcTsGenModulePath)};`);
 			this._definitionWriter.AddLine(`export class ${className} {`);
 			this._definitionWriter.Indent();
 			this._definitionWriter.AddLine("private _grpcServer: IGrpcServerImplementation;");
